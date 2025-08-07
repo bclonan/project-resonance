@@ -11,6 +11,10 @@ from fastapi.templating import Jinja2Templates
 import json
 import websockets
 from fastapi import UploadFile, File
+import asyncio
+import subprocess # Use the standard subprocess module
+import functools  # For creating partial functions for the thread
+
 
 from phiresearch_systems.generators import modlo_sequence
 # --- Ensure we can find the parent resonance directory ---
@@ -141,59 +145,86 @@ async def compress_file_endpoint(file: UploadFile = File(...)):
 # =================================================================================
 # DEMO 3: LIVE CLOUD BENCHMARK
 # =================================================================================
+def run_benchmark_in_thread(loop, websocket):
+    """
+    This is a standard, BLOCKING function that runs the benchmark script.
+    It is designed to be executed in a separate thread by asyncio's executor.
+    It safely streams output back to the main asyncio loop.
+    """
+    try:
+        # Define the absolute path to the benchmark script to ensure it's always found
+        script_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 
+            '..', # Go up to the parent 'resonance' directory
+            'benchmarks', 
+            'system', 
+            'run_system_benchmark.py'
+        )
+        
+        # Use sys.executable to ensure we're using the same Python interpreter
+        # The '-u' flag is crucial for unbuffered output, which gives us a true real-time stream
+        command = [sys.executable, "-u", script_path]
+
+        # This is a thread-safe way to send data back to the websocket
+        def sync_send(data):
+            """A helper to schedule an async send from a synchronous thread."""
+            async def async_send():
+                await websocket.send_json(data)
+            # Schedule the async send function to run on the main event loop
+            loop.call_soon_threadsafe(asyncio.create_task, async_send())
+
+        # Use Popen to get real-time access to stdout and stderr
+        # This is the core of the real-time streaming logic
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True, # Decode output as text
+            encoding='utf-8',
+            errors='ignore' # Ignore any minor decoding errors from Docker's progress bars
+        )
+
+        # Stream stdout line by line until the process closes the pipe
+        for line in iter(process.stdout.readline, ''):
+            sync_send({"type": "log", "line": line.strip()})
+        
+        # After stdout is finished, stream any stderr messages
+        for line in iter(process.stderr.readline, ''):
+            sync_send({"type": "error", "line": line.strip()})
+
+        # Clean up the process
+        process.stdout.close()
+        process.stderr.close()
+        process.wait()
+        
+        status_msg = f"Benchmark finished with exit code {process.returncode}."
+        sync_send({"type": "status", "line": status_msg})
+
+    except Exception as e:
+        error_msg = f"An unexpected error occurred in the benchmark thread: {e}"
+        print(error_msg)
+        sync_send({"type": "error", "line": error_msg})
+
 @app.websocket("/ws/cloud_benchmark")
 async def cloud_benchmark_stream(websocket: WebSocket):
     """
-    Runs the actual system benchmark script as a subprocess and streams its
-    output to the client in real-time.
+    This endpoint runs the blocking benchmark function in a thread pool
+    to avoid freezing the server. This is the robust, cross-platform solution.
     """
     await websocket.accept()
+    loop = asyncio.get_running_loop()
     
-    # Define the path to the benchmark script relative to this app's location
-    script_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        '..', # Go up to the parent 'resonance' directory
-        'benchmarks',
-        'system',
-        'run_system_benchmark.py'
-    )
-    
-    if not os.path.exists(script_path):
-        await websocket.send_json({"type": "error", "line": f"FATAL: Benchmark script not found at {script_path}"})
-        await websocket.close()
-        return
-
-    # Use sys.executable to ensure we're using the same Python interpreter
-    command = f'"{sys.executable}" -u "{script_path}"' # -u for unbuffered output
-    
-    process = await asyncio.create_subprocess_shell(
-        command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-
-    async def stream_output(stream, stream_type):
-        """Helper function to read from a stream and send to websocket."""
-        async for line in stream:
-            await websocket.send_json({"type": stream_type, "line": line.decode('utf-8', errors='ignore').strip()})
-
     try:
-        # Concurrently stream stdout and stderr to the client
-        await asyncio.gather(
-            stream_output(process.stdout, "log"),
-            stream_output(process.stderr, "error")
+        # Run the blocking function in the default thread pool executor.
+        # `functools.partial` is used to pass arguments to our target function.
+        await loop.run_in_executor(
+            None,  # Use the default executor
+            functools.partial(run_benchmark_in_thread, loop, websocket)
         )
-        
-        await process.wait()
-        
-        if process.returncode == 0:
-            await websocket.send_json({"type": "status", "line": "Benchmark finished successfully."})
-        else:
-            await websocket.send_json({"type": "status", "line": f"Benchmark failed with exit code {process.returncode}."})
-
     except Exception as e:
         print(f"Cloud benchmark WebSocket error: {e}")
     finally:
+        # Ensure the connection is always closed
         await websocket.close()
 
 # =================================================================================
@@ -347,29 +378,118 @@ async def market_data_stream(websocket: WebSocket):
 # =================================================================================
 # DEMO 7: PROCEDURAL CITY GENERATION (MODLO SEQUENCE)
 # =================================================================================
-@app.get("/api/generate_city")
-def generate_city(seed: int = 0, num_buildings: int = 100):
+@app.get("/api/generate_universe")
+def generate_universe(seed: int = 1337, grid_size: int = 50):
     """
-    Uses the Modlo Sequence to procedurally generate a city skyline.
-    The seed makes the generation deterministic and reproducible.
+    Uses the Modlo Sequence in a multi-dimensional way to procedurally generate
+    a 2D universe of star systems. The seed makes the generation deterministic.
     """
-    # Use the seed to make the generation predictable
+    # 1. Use the seed to ensure the universe is reproducible.
     random.seed(seed)
     
-    # Generate the building parameters from the Modlo Sequence
-    height_sequence = modlo_sequence(num_buildings)
-    width_sequence = modlo_sequence(num_buildings + 5)[5:] # Offset for variety
-    color_sequence = modlo_sequence(num_buildings + 10)[10:]
-
-    buildings = []
-    for i in range(num_buildings):
-        buildings.append({
-            "height": height_sequence[i] * random.uniform(8, 15),
-            "width": width_sequence[i] * random.uniform(4, 6),
-            "color_val": color_sequence[i]
-        })
+    # 2. Generate two long Modlo sequences. We'll use one for X-axis properties
+    #    and one for Y-axis properties to create complex, non-linear patterns.
+    #    This demonstrates the multi-dimensional application of the sequence.
+    modlo_x = modlo_sequence(grid_size)
+    modlo_y = modlo_sequence(grid_size)
     
-    return {"buildings": buildings}
+    star_systems = []
+    for y in range(grid_size):
+        for x in range(grid_size):
+            # 3. Combine the X and Y sequences to determine if a star exists here.
+            #    Using a prime number modulus provides good, non-grid-like distribution.
+            existence_chance = (modlo_x[x] + modlo_y[y]) % 23
+            
+            # Only create a star if the chance is high enough (e.g., > 18)
+            if existence_chance > 18:
+                # 4. Use a different combination to determine the star's properties.
+                star_type_val = (modlo_x[x] * modlo_y[y]) % 100
+                
+                # Determine star properties based on the sequence values
+                if star_type_val > 95:
+                    star_type = "Pulsar"
+                    color = "#9b59b6" # Purple
+                    size = (modlo_x[x] % 5 + 1) * 1.5
+                elif star_type_val > 80:
+                    star_type = "Red Giant"
+                    color = "#e74c3c" # Red
+                    size = (modlo_y[y] % 8 + 4) * 1.2
+                elif star_type_val > 60:
+                    star_type = "Blue Giant"
+                    color = "#3498db" # Blue
+                    size = (modlo_x[x] % 6 + 3) * 1.4
+                else:
+                    star_type = "Main Sequence"
+                    color = "#f1c40f" # Yellow
+                    size = (modlo_y[y] % 4 + 2)
+                
+                star_systems.append({
+                    "x": x, "y": y,
+                    "size": size,
+                    "color": color,
+                    "type": star_type,
+                    # We include the raw data to prove it's not random!
+                    "modlo_vals": f"X:{modlo_x[x]}, Y:{modlo_y[y]}" 
+                })
+                
+    return {"star_systems": star_systems, "grid_size": grid_size}
+
+# =================================================================================
+# DEMO 8 : module sequence
+# =================================================================================
+@app.get("/api/generate_grid")
+def generate_grid(seed: int = 1337, grid_size: int = 50):
+    """
+    Uses the Modlo Sequence in a multi-dimensional way to procedurally generate
+    a 2D grid of deterministic data points. The seed makes the generation reproducible.
+    This can be interpreted as a star map, a financial market state, or a digital twin simulation.
+    """
+    # 1. Use the seed to ensure the grid is reproducible.
+    random.seed(seed)
+    
+    # 2. Generate two long Modlo sequences for X and Y axes.
+    modlo_x = modlo_sequence(grid_size)
+    modlo_y = modlo_sequence(grid_size)
+    
+    grid_points = []
+    for y in range(grid_size):
+        for x in range(grid_size):
+            # 3. Combine sequences to determine if a point exists and its properties.
+            existence_chance = (modlo_x[x] + modlo_y[y]) % 23
+            
+            if existence_chance > 18:
+                # 4. Use a different combination to determine the point's "energy level" or "value".
+                value_val = (modlo_x[x] * modlo_y[y]) % 100
+                
+                # Determine properties based on the sequence values
+                if value_val > 95:
+                    point_type = "High-Alpha Event" # Financial context
+                    color = "#e74c3c" # Red - critical event
+                    size = 12
+                elif value_val > 80:
+                    point_type = "Market Anomaly"
+                    color = "#f1c40f" # Yellow - warning
+                    size = 8
+                elif value_val > 60:
+                    point_type = "Synchronized State"
+                    color = "#3498db" # Blue - stable
+                    size = 6
+                else:
+                    point_type = "Nominal Fluctuation"
+                    color = "#2ecc71" # Green - normal
+                    size = 4
+                
+                grid_points.append({
+                    "x": x, "y": y,
+                    "size": size,
+                    "color": color,
+                    "type": point_type,
+                    # We include the raw data to prove it's not random!
+                    "modlo_vals": f"X:{modlo_x[x]}, Y:{modlo_y[y]}",
+                    "deterministic_id": f"ID-{seed}-{x}-{y}" # A unique, reproducible ID
+                })
+                
+    return {"grid_points": grid_points, "grid_size": grid_size}
 
 # =================================================================================
 # HTML Page Routing
@@ -377,6 +497,10 @@ def generate_city(seed: int = 0, num_buildings: int = 100):
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/demo/modlo_grid_two", response_class=HTMLResponse)
+async def show_modlo_grid_two_demo(request: Request):
+    return templates.TemplateResponse("modlo_demo_two.html", {"request": request})
 
 @app.get("/demo/{demo_name}", response_class=HTMLResponse)
 async def show_demo(request: Request, demo_name: str):
@@ -393,6 +517,8 @@ async def show_research(request: Request):
 @app.get("/architecture", response_class=HTMLResponse)
 async def show_architecture(request: Request):
     return templates.TemplateResponse("architecture.html", {"request": request})
+
+
 
 
 if __name__ == "__main__":

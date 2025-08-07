@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VC Demo: Deterministic Sequence & Grid Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .grid-container { display: grid; grid-template-columns: 3fr 1fr; gap: 2rem; margin-top: 1.5rem; }
+        #grid-viewport { height: 600px; border: 1px solid #34495e; border-radius: 5px; background: #0c0d14; overflow: hidden; position: relative; cursor: grab; }
+        #grid-canvas { position: absolute; transform-origin: 0 0; transition: transform 0.2s ease-out; }
+        .grid-point { position: absolute; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
+        .grid-point:hover { transform: scale(1.8); filter: brightness(1.5); }
+        .info-panel { background-color: #f8f9fa; padding: 1.5rem; border-radius: 5px; }
+        .info-panel h3 { margin-top: 0; }
+        .info-panel p { margin: 0.5rem 0; }
+        .controls { margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center; justify-content: center; }
+        .controls input { padding: 0.5rem; border-radius: 5px; border: 1px solid #bdc3c7; width: 200px; }
+        .use-case-tabs { display: flex; margin-top: 2rem; border-bottom: 1px solid #ddd; }
+        .use-case-tab { padding: 0.5rem 1rem; cursor: pointer; color: #7f8c8d; }
+        .use-case-tab.active { font-weight: bold; color: #2c3e50; border-bottom: 2px solid #3498db; }
+        .use-case-content { display: none; margin-top: 1rem; }
+        .use-case-content.active { display: block; }
+        @media (max-width: 900px) { .grid-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="demo-container">
+            <div class="demo-header">
+                <div>
+                    <h2>VC Demo: Deterministic Sequence & Grid Generator</h2>
+                    <p>Showcasing how the **Modlo Sequence** can generate vast, complex, and reproducible data fields from a single seed.</p>
+                </div>
+                <a href="/" class="back-link">← Back to Demos</a>
+            </div>
+
+            <div class="grid-container">
+                <div id="grid-viewport">
+                    <div id="grid-canvas"></div>
+                </div>
+                <div class="info-panel">
+                    <h3>Data Point Information</h3>
+                    <p><strong>Type:</strong> <span id="info-type">-</span></p>
+                    <p><strong>Coordinates:</strong> <span id="info-coords">-</span></p>
+                    <p><strong>Value/Size:</strong> <span id="info-size">-</span></p>
+                    <p><strong>Deterministic ID:</strong> <span id="info-id">-</span></p>
+                    <hr>
+                    <p style="font-size: 0.8rem; color: #7f8c8d;">This point was generated from the following Modlo Sequence values:</p>
+                    <p><strong>Modlo Values:</strong> <span id="info-modlo">-</span></p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <label for="seed-input">Grid Seed:</label>
+                <input type="text" id="seed-input" value="1337">
+                <button id="generateButton" class="button">Generate Grid</button>
+            </div>
+
+            <div class="explanation-box" style="margin-top: 2rem; border-left-color: #9b59b6;">
+                <h3>The Multi-Billion Dollar Applications</h3>
+                <p>Storing and synchronizing massive, complex datasets is a huge challenge. This demo showcases **procedural data generation**, a technique that revolutionizes how digital environments are built, tested, and synchronized.</p>
+                
+                <div class="use-case-tabs">
+                    <div class="use-case-tab active" onclick="openTab(event, 'gaming')">Gaming & Metaverse</div>
+                    <div class="use-case-tab" onclick="openTab(event, 'hft')">High-Frequency Trading</div>
+                    <div class="use-case-tab" onclick="openTab(event, 'twins')">Digital Twins & Simulation</div>
+                </div>
+
+                <div id="gaming" class="use-case-content active">
+                    <p><strong>Use Case:</strong> Instead of storing a 100 GB game world, store a 1 KB seed. The **Modlo Sequence** acts as "digital DNA," growing a vast, explorable universe in real-time. This allows for exponentially larger worlds with a fraction of the storage and bandwidth costs, a critical technology for the future of immersive gaming.</p>
+                </div>
+                <div id="hft" class="use-case-content">
+                    <p><strong>Use Case:</strong> In High-Frequency Trading, algorithms must be rigorously backtested against realistic market data. The Modlo Sequence can generate **infinite streams of deterministic, yet complex, market data** from a simple seed. This allows firms to test trading strategies across millions of reproducible scenarios, ensuring robustness and finding edge cases that random data would miss.</p>
+                </div>
+                <div id="twins" class="use-case-content">
+                    <p><strong>Use Case:</strong> A "Digital Twin" is a virtual model of a real-world object, like a factory floor or a jet engine. The Modlo Sequence can generate the initial state for thousands of simulated sensors and components. By sharing only the seed, multiple engineers can run the exact same complex simulation, ensuring that all tests are perfectly synchronized and reproducible.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('grid-canvas');
+        const viewport = document.getElementById('grid-viewport');
+        const seedInput = document.getElementById('seed-input');
+        const generateButton = document.getElementById('generateButton');
+        
+        const infoType = document.getElementById('info-type');
+        const infoCoords = document.getElementById('info-coords');
+        const infoSize = document.getElementById('info-size');
+        const infoId = document.getElementById('info-id');
+        const infoModlo = document.getElementById('info-modlo');
+
+        let scale = 1.0, panX = 0, panY = 0, isPanning = false, startPan = { x: 0, y: 0 };
+
+        async function generateGrid() {
+            const seed = seedInput.value || '0';
+            const gridSize = 50;
+            const cellSize = 40;
+            canvas.innerHTML = '';
+            canvas.style.width = `${gridSize * cellSize}px`;
+            canvas.style.height = `${gridSize * cellSize}px`;
+
+            const response = await fetch(`/api/generate_grid?seed=${encodeURIComponent(seed)}&grid_size=${gridSize}`);
+            const data = await response.json();
+
+            data.grid_points.forEach(point => {
+                const pointEl = document.createElement('div');
+                pointEl.className = 'grid-point';
+                pointEl.style.left = `${point.x * cellSize}px`;
+                pointEl.style.top = `${point.y * cellSize}px`;
+                pointEl.style.width = `${point.size}px`;
+                pointEl.style.height = `${point.size}px`;
+                pointEl.style.backgroundColor = point.color;
+
+                pointEl.addEventListener('click', () => {
+                    infoType.textContent = point.type;
+                    infoCoords.textContent = `(${point.x}, ${point.y})`;
+                    infoSize.textContent = point.size.toFixed(2);
+                    infoId.textContent = point.deterministic_id;
+                    infoModlo.textContent = point.modlo_vals;
+                });
+                canvas.appendChild(pointEl);
+            });
+        }
+
+        function updateTransform() { canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
+
+        // Pan and Zoom listeners (as before)
+        viewport.addEventListener('mousedown', (e) => { isPanning = true; startPan.x = e.clientX - panX; startPan.y = e.clientY - panY; viewport.style.cursor = 'grabbing'; });
+        viewport.addEventListener('mousemove', (e) => { if (!isPanning) return; panX = e.clientX - startPan.x; panY = e.clientY - startPan.y; updateTransform(); });
+        viewport.addEventListener('mouseup', () => { isPanning = false; viewport.style.cursor = 'grab'; });
+        viewport.addEventListener('mouseleave', () => { isPanning = false; viewport.style.cursor = 'grab'; });
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomIntensity = 0.1;
+            const delta = e.deltaY > 0 ? -zoomIntensity : zoomIntensity;
+            const newScale = Math.max(0.2, Math.min(5, scale + delta));
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            panX = mouseX - (mouseX - panX) * (newScale / scale);
+            panY = mouseY - (mouseY - panY) * (newScale / scale);
+            scale = newScale;
+            updateTransform();
+        });
+
+        // Tab switching logic
+        function openTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("use-case-content");
+            for (let i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+            const tablinks = document.getElementsByClassName("use-case-tab");
+            for (let i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        generateButton.addEventListener('click', generateGrid);
+        generateGrid(); // Initial generation
+    </script>
+</body>
+</html>

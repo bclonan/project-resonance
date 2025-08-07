@@ -2,35 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VC Demo: Procedural Generation with Modlo Sequence</title>
+    <title>VC Demo: Procedural Universe Generator</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        #city-container {
-            height: 500px;
-            border: 1px solid #ecf0f1;
+        .universe-container {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        #universe-viewport {
+            height: 600px;
+            border: 1px solid #34495e;
             border-radius: 5px;
-            background: linear-gradient(to bottom, #34495e 0%, #2c3e50 100%);
+            background: #0c0d14; /* Deep space color */
             overflow: hidden;
             position: relative;
+            cursor: grab;
         }
-        .building {
+        #universe-canvas {
             position: absolute;
-            bottom: 0;
-            background-color: #95a5a6;
-            transition: all 0.5s ease-in-out;
+            transform-origin: 0 0;
+            transition: transform 0.2s ease-out;
         }
-        .controls {
-            margin-top: 1.5rem;
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            justify-content: center;
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
-        .controls input {
-            padding: 0.5rem;
+        .star:hover {
+            transform: scale(1.5);
+            filter: brightness(1.5);
+        }
+        .star.pulsar {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.4); }
+            70% { transform: scale(1.1); box-shadow: 0 0 10px 20px rgba(155, 89, 182, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); }
+        }
+        .info-panel {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
             border-radius: 5px;
-            border: 1px solid #bdc3c7;
-            width: 200px;
+        }
+        .info-panel h3 { margin-top: 0; }
+        .info-panel p { margin: 0.5rem 0; }
+        .controls { margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center; justify-content: center; }
+        .controls input { padding: 0.5rem; border-radius: 5px; border: 1px solid #bdc3c7; width: 200px; }
+        @media (max-width: 900px) {
+            .universe-container { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -39,67 +62,134 @@
         <div class="demo-container">
             <div class="demo-header">
                 <div>
-                    <h2>VC Demo: Procedural Generation with the Modlo Sequence</h2>
-                    <p>Demonstrating how a massive, complex city can be generated from a tiny seed number.</p>
+                    <h2>VC Demo: Procedural Universe Generator</h2>
+                    <p>Demonstrating how a vast, explorable universe can be generated from a single seed number using the Modlo Sequence.</p>
                 </div>
                 <a href="/" class="back-link">← Back to Demos</a>
             </div>
 
-            <div id="city-container"></div>
-
-            <div class="controls">
-                <label for="seed-input">City Seed:</label>
-                <input type="text" id="seed-input" value="1337">
-                <button id="generateButton" class="button">Generate City</button>
+            <div class="universe-container">
+                <div id="universe-viewport">
+                    <div id="universe-canvas"></div>
+                </div>
+                <div class="info-panel">
+                    <h3>System Information</h3>
+                    <p><strong>Type:</strong> <span id="info-type">-</span></p>
+                    <p><strong>Coordinates:</strong> <span id="info-coords">-</span></p>
+                    <p><strong>Size:</strong> <span id="info-size">-</span></p>
+                    <p><strong>Color:</strong> <span id="info-color">-</span></p>
+                    <hr>
+                    <p style="font-size: 0.8rem; color: #7f8c8d;">This star was generated from the following Modlo Sequence values:</p>
+                    <p><strong>Modlo Values:</strong> <span id="info-modlo">-</span></p>
+                </div>
             </div>
 
-            <div class="explanation-box" style="margin-top: 2rem; border-left-color: #2ecc71;">
-                <h3>The Multi-Billion Dollar Application: Gaming & Metaverse</h3>
-                <p>Storing the data for a massive, open-world game or a metaverse environment can require hundreds of gigabytes. This demo showcases **procedural content generation (PCG)**, a technique that revolutionizes how digital worlds are built.</p>
+            <div class="controls">
+                <label for="seed-input">Universe Seed:</label>
+                <input type="text" id="seed-input" value="1337">
+                <button id="generateButton" class="button">Generate Universe</button>
+            </div>
+
+            <div class="explanation-box" style="margin-top: 2rem; border-left-color: #9b59b6;">
+                <h3>The Multi-Billion Dollar Application: Gaming, Metaverse & Digital Twins</h3>
+                <p>Storing the data for a massive, open-world game or a metaverse environment can require petabytes of storage. This demo showcases **procedural content generation (PCG)**, a technique that revolutionizes how digital worlds are built.</p>
                 <ul>
-                    <li><strong>The Innovation:</strong> Instead of storing the city, we only store a tiny "seed" number. Our unique **Modlo Sequence** algorithm uses this seed to "grow" the entire city skyline in real-time, complete with unique landmark buildings and consistent background structures.</li>
-                    <li><strong>The Business Impact:</strong> This technique allows developers to create exponentially larger and more detailed worlds with a fraction of the storage and bandwidth costs. It's a critical enabling technology for the future of immersive gaming and the metaverse.</li>
+                    <li><strong>The Innovation:</strong> Instead of storing the universe, we only store a tiny "seed" number. Our unique **Modlo Sequence** acts as a "cosmic DNA," deterministically generating the position, size, and type of every star system in this 2D universe.</li>
+                    <li><strong>The Business Impact:</strong> This allows developers to create exponentially larger and more detailed worlds with a fraction of the storage and bandwidth costs. It's a critical enabling technology for the future of immersive gaming, digital twin simulations, and the metaverse.</li>
                 </ul>
-                <p><strong>Try it yourself:</strong> Change the seed number and click "Generate City". You'll see a completely different, but equally complex, city appear instantly. The entire city you see is generated from that single number.</p>
+                <p><strong>Interact with the demo:</strong> Change the seed number to generate a new universe. Click and drag to pan, use your mouse wheel to zoom, and click on a star to see its procedurally generated properties.</p>
             </div>
         </div>
     </div>
 
     <script>
-        const cityContainer = document.getElementById('city-container');
+        const canvas = document.getElementById('universe-canvas');
+        const viewport = document.getElementById('universe-viewport');
         const seedInput = document.getElementById('seed-input');
         const generateButton = document.getElementById('generateButton');
+        
+        const infoType = document.getElementById('info-type');
+        const infoCoords = document.getElementById('info-coords');
+        const infoSize = document.getElementById('info-size');
+        const infoColor = document.getElementById('info-color');
+        const infoModlo = document.getElementById('info-modlo');
 
-        const colorPalette = ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#e74c3c'];
+        let scale = 1.0;
+        let panX = 0;
+        let panY = 0;
+        let isPanning = false;
+        let startPan = { x: 0, y: 0 };
 
-        async function generateCity() {
+        async function generateUniverse() {
             const seed = seedInput.value || '0';
-            const response = await fetch(`/api/generate_city?seed=${encodeURIComponent(seed)}&num_buildings=100`);
+            const gridSize = 50;
+            const cellSize = 40; // Visual size of each grid cell in pixels
+            canvas.innerHTML = ''; // Clear previous universe
+            canvas.style.width = `${gridSize * cellSize}px`;
+            canvas.style.height = `${gridSize * cellSize}px`;
+
+            const response = await fetch(`/api/generate_universe?seed=${encodeURIComponent(seed)}&grid_size=${gridSize}`);
             const data = await response.json();
 
-            cityContainer.innerHTML = ''; // Clear previous city
-            let currentX = 0;
+            data.star_systems.forEach(star => {
+                const starEl = document.createElement('div');
+                starEl.className = `star ${star.type.toLowerCase().replace(' ', '-')}`;
+                starEl.style.left = `${star.x * cellSize}px`;
+                starEl.style.top = `${star.y * cellSize}px`;
+                starEl.style.width = `${star.size * 2}px`;
+                starEl.style.height = `${star.size * 2}px`;
+                starEl.style.backgroundColor = star.color;
 
-            data.buildings.forEach(b => {
-                const building = document.createElement('div');
-                building.className = 'building';
-                building.style.height = `${b.height}px`;
-                building.style.width = `${b.width}px`;
-                building.style.left = `${currentX}px`;
-                building.style.backgroundColor = colorPalette[b.color_val % colorPalette.length];
-                
-                // Add some subtle detail
-                building.style.opacity = Math.random() * 0.3 + 0.7;
+                starEl.addEventListener('click', () => {
+                    infoType.textContent = star.type;
+                    infoCoords.textContent = `(${star.x}, ${star.y})`;
+                    infoSize.textContent = star.size.toFixed(2);
+                    infoColor.textContent = star.color;
+                    infoModlo.textContent = star.modlo_vals;
+                });
 
-                cityContainer.appendChild(building);
-                currentX += b.width + Math.random() * 10 - 4; // Add small, random gaps
-            });
+                canvas.appendChild(starEl);
+});
         }
 
-        generateButton.addEventListener('click', generateCity);
-        
-        // Generate the initial city on page load
-        generateCity();
+        function updateTransform() {
+            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        // Pan and Zoom listeners
+        viewport.addEventListener('mousedown', (e) => {
+            isPanning = true;
+            startPan.x = e.clientX - panX;
+            startPan.y = e.clientY - panY;
+            viewport.style.cursor = 'grabbing';
+        });
+        viewport.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            panX = e.clientX - startPan.x;
+            panY = e.clientY - startPan.y;
+            updateTransform();
+        });
+        viewport.addEventListener('mouseup', () => { isPanning = false; viewport.style.cursor = 'grab'; });
+        viewport.addEventListener('mouseleave', () => { isPanning = false; viewport.style.cursor = 'grab'; });
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomIntensity = 0.1;
+            const delta = e.deltaY > 0 ? -zoomIntensity : zoomIntensity;
+            const newScale = Math.max(0.2, Math.min(5, scale + delta));
+            
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            panX = mouseX - (mouseX - panX) * (newScale / scale);
+            panY = mouseY - (mouseY - panY) * (newScale / scale);
+            
+            scale = newScale;
+            updateTransform();
+        });
+
+        generateButton.addEventListener('click', generateUniverse);
+        generateUniverse(); // Initial generation
     </script>
 </body>
 </html>
