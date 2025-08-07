@@ -1,6 +1,5 @@
 import sys
 from setuptools import setup, find_packages, Extension
-from setuptools.command.build_ext import build_ext as _build_ext
 
 # Helper class to lazily find pybind11 include directory
 class get_pybind_include:
@@ -26,7 +25,7 @@ ext_modules = [
     ),
 ]
 
-# The setup() function is now much simpler. All metadata is in pyproject.toml.
+# The setup() function is now minimal. All metadata is in pyproject.toml.
 setup(
     packages=find_packages(),
     ext_modules=ext_modules,

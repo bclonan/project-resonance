@@ -1,22 +1,23 @@
-# This is the master configuration file for Netlify.
-# It tells Netlify how to build and deploy your project.
+# This is the definitive, production-ready configuration file for Netlify.
 
 [build]
-  # The command to build your entire project. This will:
-  # 1. Install all Python dependencies from both requirements files.
-  # 2. Compile the C++ core for the phicomp library.
-  # 3. Install the project-resonance package itself.
-  command = "pip install --upgrade pip && pip install -r resonance_demos/requirements.txt && pip install ."
+  # The command to build the entire project.
+  command = "pip install --upgrade pip && pip install -e .[benchmark,demos]"
   
   # The directory containing the serverless function.
   functions = "netlify/functions/"
   
-  # The directory containing the static web files to be published.
-  publish = "resonance_demos/"
+  # --- DEFINITIVE FIX ---
+  # The publish directory should ONLY contain assets that are served directly.
+  # All our HTML pages are dynamic templates, so only 'static' is needed here.
+  publish = "resonance_demos/static/"
 
-# This is the magic rule. It tells Netlify to route all requests
-# that are not for a static file (like CSS or JS) to our Python serverless function.
+# --- DEFINITIVE FIX ---
+# This is the magic rule. It tells Netlify to route ALL incoming requests
+# (like /, /about, /demo/market, /api/balance) to our Python serverless function.
+# Netlify's engine is smart enough to check for a static file in the 'publish'
+# directory first (e.g., /css/style.css) before applying this rule.
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/api"
+  to = "/.netlify/functions/api/:splat"
   status = 200
