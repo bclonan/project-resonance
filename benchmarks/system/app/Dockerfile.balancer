@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# The build context is the project root, so paths are relative to that.
+COPY benchmarks/system/app/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY benchmarks/system/resonance_balancer.py .
+# --- BUG FIX: Correct path from the project root context ---
+COPY phiresearch_systems ./phiresearch_systems
+
+CMD ["python", "resonance_balancer.py"]

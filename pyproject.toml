@@ -1,0 +1,33 @@
+# This file defines the project build system using the modern PEP 517 standard.
+# It tells pip how to build the project and what dependencies are needed for the build itself.
+
+[build-system]
+# These are the build-time dependencies. We need setuptools and pybind11 to compile the C++ code.
+requires = [
+    "setuptools>=61.0",
+    "pybind11>=2.6"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project-resonance"
+version = "1.0.1"
+authors = [
+    { name="Bradley Clonan", email="clonanxyz@gmail.com" },
+]
+description = "A collection of high-performance system components based on mathematical coherence."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C++",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Archiving :: Compression",
+    "Development Status :: 4 - Beta",
+]
+
+[project.urls]
+Homepage = "https://github.com/bclonan/project-resonance"
+Issues = "https://github.com/bclonan/project-resonance/issues"
