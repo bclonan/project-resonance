@@ -14,4 +14,4 @@ from app import app
 
 # Create the Mangum handler. This is the adapter that allows FastAPI
 # to run in a serverless environment (like AWS Lambda, which Netlify uses).
-handler = mangum.Mangum(app)
+handler = mangum.Mangum(app, lifespan="off")

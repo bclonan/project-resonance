@@ -3,27 +3,20 @@
 
 [build]
   # The command to build your entire project. This will:
-  # 1. Install all Python dependencies.
+  # 1. Install all Python dependencies from both requirements files.
   # 2. Compile the C++ core for the phicomp library.
   # 3. Install the project-resonance package itself.
-  command = "pip install . && pip install -r resonance_demos/requirements.txt"
+  command = "pip install --upgrade pip && pip install -r resonance_demos/requirements.txt && pip install ."
   
   # The directory containing the serverless function.
   functions = "netlify/functions/"
   
   # The directory containing the static web files to be published.
-  publish = "resonance_demos/static/"
+  publish = "resonance_demos/"
 
+# This is the magic rule. It tells Netlify to route all requests
+# that are not for a static file (like CSS or JS) to our Python serverless function.
 [[redirects]]
-  # This is the magic rule. It tells Netlify to route all API calls
-  # (like /api/balance or /ws/market_data) to our Python serverless function.
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
-[[redirects]]
-  # This rule ensures that all other page routes (/about, /demo/market, etc.)
-  # are handled by our FastAPI app, allowing for clean URLs.
   from = "/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/api"
   status = 200
