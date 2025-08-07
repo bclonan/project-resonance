@@ -1,0 +1,42 @@
+resonance/
+├── .gitignore
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── LICENSE
+├── README.md
+├── setup.py
+│
+├── benchmarks/
+│   ├── run_compression_benchmark.py
+│   └── system/
+│       ├── app/
+│       │   ├── Dockerfile
+│       │   ├── main.py
+│       │   └── requirements.txt
+│       ├── k6/
+│       │   └── load_test.js
+│       ├── nginx/
+│       │   └── nginx.conf
+│       ├── docker-compose.yml
+│       ├── resonance_balancer.py
+│       └── run_system_benchmark.py
+│
+├── docs/
+│   └── papers/
+│       ├── DCC_2024_Clonan.pdf
+│       └── USENIX_ATC_24_Clonan.pdf
+│
+├── phiresearch_compression/
+│   ├── __init__.py
+│   ├── README.md
+│   ├── compressor.py
+│   ├── utils.py
+│   └── core/
+│       ├── fcm_core.cpp
+│       └── fcm_core.h
+│
+└── phiresearch_systems/
+    ├── __init__.py
+    ├── balancing.py
+    ├── caching.py
+    └── database.py

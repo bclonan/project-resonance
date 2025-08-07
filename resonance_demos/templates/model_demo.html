@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo 4: AI Model Loading Accelerator</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="demo-container">
+            <div class="demo-header">
+                <div>
+                    <h2>AI Model Loading Accelerator</h2>
+                    <p>This is a **live benchmark** comparing the time to load a 256MB AI model from storage into memory using two different methods.</p>
+                </div>
+                <a href="/" class="back-link">← Back to Demos</a>
+            </div>
+            <button id="loadButton" class="button">Start 256MB Model Load Benchmark</button>
+            <p id="statusText" style="margin-top: 1rem; color: #7f8c8d;">Status: Idle</p>
+
+            <div style="margin-top: 2rem;">
+                <h3>Traditional Loading (Raw File)</h3>
+                <p style="font-size: 0.9rem;">This simulates reading the entire 256MB file from a fast disk into application memory.</p>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="raw-progress">0%</div>
+                </div>
+                <p id="raw-stats">Size: - | Time: -</p>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <h3>Accelerated Loading (with PhiComp)</h3>
+                <p style="font-size: 0.9rem;">This simulates reading the much smaller compressed file from disk and then using CPU to decompress it. The total time is often much faster.</p>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="phicomp-progress" style="background-color: #2ecc71;">0%</div>
+                </div>
+                <p id="phicomp-stats">Size: - | Time: -</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // This JavaScript is a real client that polls the server for the status
+        // of the live benchmark running on the backend.
+        const loadButton = document.getElementById('loadButton');
+        const statusText = document.getElementById('statusText');
+        const rawProgress = document.getElementById('raw-progress');
+        const phicompProgress = document.getElementById('phicomp-progress');
+        const rawStats = document.getElementById('raw-stats');
+        const phicompStats = document.getElementById('phicomp-stats');
+
+        loadButton.addEventListener('click', async () => {
+            loadButton.disabled = true;
+            statusText.textContent = 'Status: Starting benchmark on server...';
+            
+            // Reset UI
+            rawProgress.style.width = '0%'; rawProgress.textContent = '0%';
+            phicompProgress.style.width = '0%'; phicompProgress.textContent = '0%';
+            rawStats.textContent = 'Size: - | Time: -';
+            phicompStats.textContent = 'Size: - | Time: -';
+
+            // Trigger the backend task
+            await fetch('/api/load_model', { method: 'POST' });
+
+            // Poll the server for status updates
+            const interval = setInterval(async () => {
+                const response = await fetch('/api/load_status');
+                const data = await response.json();
+                statusText.textContent = `Status: ${data.status}...`;
+
+                if (data.status === 'complete') {
+                    clearInterval(interval);
+                    const results = data.results;
+                    
+                    rawProgress.style.width = '100%'; rawProgress.textContent = '100%';
+                    phicompProgress.style.width = '100%'; phicompProgress.textContent = '100%';
+
+                    rawStats.textContent = `Size: ${(results.raw_size / 1024 / 1024).toFixed(0)} MB | Time: ${results.raw_time.toFixed(0)} ms`;
+                    phicompStats.textContent = `Size: ${(results.phicomp_size / 1024 / 1024).toFixed(1)} MB | Time: ${results.phicomp_time.toFixed(0)} ms`;
+                    
+                    const improvement = ((results.raw_time - results.phicomp_time) / results.raw_time * 100).toFixed(0);
+                    statusText.textContent = `Status: Complete! Accelerated loading was ${improvement}% faster.`;
+                    loadButton.disabled = false;
+                } else if (data.status === 'error') {
+                    clearInterval(interval);
+                    statusText.textContent = `Status: Error! ${data.results}`;
+                    loadButton.disabled = false;
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

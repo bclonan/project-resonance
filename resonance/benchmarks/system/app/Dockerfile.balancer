@@ -1,0 +1,22 @@
+# Use an official, slim Python runtime as a parent image
+FROM python:3.11-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the requirements file from the 'app' directory (sibling to this Dockerfile)
+# and install dependencies.
+COPY app/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the custom Python load balancer script
+COPY resonance_balancer.py .
+
+# Copy the entire 'phiresearch_systems' library into the container.
+# This is crucial for the balancer to use PhiBalancer.
+# The path is relative to the Docker build context (which is 'benchmarks/system/').
+COPY ../../phiresearch_systems ./phiresearch_systems
+
+# Define the command to run the custom balancer application.
+# It listens on port 80 for incoming requests.
+CMD ["python", "resonance_balancer.py"]

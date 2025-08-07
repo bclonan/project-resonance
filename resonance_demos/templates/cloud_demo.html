@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo 3: Live Cloud Benchmark</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .terminal .error { color: #e74c3c; }
+        .terminal .status { color: #f1c40f; font-weight: bold; }
+        .terminal .prompt { color: #2ecc71; }
+        .terminal .output { color: #bdc3c7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="demo-container">
+            <div class="demo-header">
+                <div>
+                    <h2>Live Cloud-Native Benchmark</h2>
+                    <p>This demo runs the **actual** system benchmark using Docker & k6. You are watching the real, live terminal output from the server.</p>
+                </div>
+                <a href="/" class="back-link">← Back to Demos</a>
+            </div>
+            <button id="startButton" class="button">Start Live Benchmark</button>
+            <div class="terminal" id="terminal">
+                <p><span class="prompt">$</span> Waiting to start...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const terminal = document.getElementById('terminal');
+        let ws;
+
+        function addLogLine(text, type = 'output') {
+            const p = document.createElement('p');
+            const span = document.createElement('span');
+            span.className = type;
+            
+            if (type === 'prompt') {
+                p.innerHTML = `<span class="prompt">$</span> ${text}`;
+            } else {
+                span.textContent = text;
+                p.appendChild(span);
+            }
+            
+            terminal.appendChild(p);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        startButton.addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addLogLine('Benchmark is already running.', 'error');
+                return;
+            }
+
+            startButton.disabled = true;
+            startButton.textContent = 'Benchmark Running...';
+            terminal.innerHTML = '';
+
+            addLogLine('Connecting to benchmark runner...', 'status');
+
+            const wsUrl = `ws://${window.location.host}/ws/cloud_benchmark`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function(event) {
+                addLogLine('Connection established. Starting benchmark...', 'status');
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                addLogLine(data.line, data.type);
+            };
+
+            ws.onclose = function(event) {
+                if (event.wasClean) {
+                    addLogLine('Connection closed cleanly.', 'status');
+                } else {
+                    addLogLine('Connection died unexpectedly. Please check server logs.', 'error');
+                }
+                startButton.disabled = false;
+                startButton.textContent = 'Start Live Benchmark';
+            };
+
+            ws.onerror = function(error) {
+                addLogLine('WebSocket Error: Could not connect to the server.', 'error');
+                startButton.disabled = false;
+                startButton.textContent = 'Start Live Benchmark';
+            };
+        });
+    </script>
+</body>
+</html>

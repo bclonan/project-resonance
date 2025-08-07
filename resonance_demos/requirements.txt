@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+jinja2
+websockets
+python-socketio
+websockets
+python-multipart
+mangum
+# The core resonance library must be installed from the parent directory
+# via 'pip install .'

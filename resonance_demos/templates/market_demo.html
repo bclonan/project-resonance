@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VC Demo: Live Financial Market Data Compression</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- BUG FIX: Replace previous charting library with ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        .market-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem; }
+        #chart-container { min-height: 450px; border: 1px solid #ecf0f1; border-radius: 5px; padding: 10px; }
+        .metrics-container, .tape-container { background-color: #f8f9fa; padding: 1.5rem; border-radius: 5px; }
+        .metric { margin-bottom: 1.5rem; }
+        .metric-label { font-size: 0.9rem; color: #7f8c8d; display: block; }
+        .metric-value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        .metric-value.highlight { color: #2ecc71; }
+        .tape-container { height: 250px; overflow-y: hidden; position: relative; }
+        .trade-tape { position: absolute; width: 100%; }
+        .trade { padding: 2px 5px; margin-bottom: 2px; font-family: "Courier New", monospace; font-size: 0.9rem; white-space: nowrap; }
+        .trade.buy { color: #2ecc71; }
+        .trade.sell { color: #e74c3c; }
+        @media (max-width: 900px) { .market-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="demo-container">
+            <div class="demo-header">
+                <div>
+                    <h2>VC Demo: Real-Time Alpha Generation via Superior Compression</h2>
+                    <p>This is a **live demonstration** processing a real-time BTC-USD trade feed from a public exchange. It proves how our technology creates a direct, measurable competitive edge in financial markets.</p>
+                </div>
+                <a href="/" class="back-link">← Back to Demos</a>
+            </div>
+
+            <div class="market-grid">
+                <div id="chart-container"></div>
+                <div>
+                    <div class="metrics-container">
+                        <div class="metric"><span class="metric-label">Bandwidth Savings (Cost Reduction)</span><span class="metric-value highlight" id="savings-value">0.00%</span></div>
+                        <div class="metric"><span class="metric-label">Raw Data Rate (Industry Standard)</span><span class="metric-value" id="raw-rate">0 KB/s</span></div>
+                        <div class="metric"><span class="metric-label">PhiComp Data Rate (Our Advantage)</span><span class="metric-value" id="phicomp-rate">0 KB/s</span></div>
+                        <div class="metric"><span class="metric-label">Latency Advantage (Alpha Generation)</span><span class="metric-value highlight" id="latency-advantage">0 µs</span></div>
+                    </div>
+                    <div class="tape-container" style="margin-top: 2rem;">
+                        <h3 style="margin-top:0;">Live BTC-USD Trade Tape</h3>
+                        <div class="trade-tape" id="trade-tape"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation-box" style="margin-top: 2rem; border-left-color: #2ecc71;">
+                <h3>The Multi-Million Dollar Edge: What You Are Seeing</h3>
+                <p>In high-frequency trading (HFT), a microsecond (µs) advantage can be worth millions. This demo is not a simulation; it is processing a **live, unpredictable feed of real market trades** and benchmarking our performance against the raw data stream.</p>
+                <ul>
+                    <li><strong>Bandwidth Savings (Direct Cost Reduction):</strong> Exchanges (NASDAQ, NYSE) and data providers (Bloomberg, Reuters) pay enormous costs to stream market data. The percentage shown above represents a direct, massive reduction in their infrastructure costs.</li>
+                    <li><strong>Latency Advantage (Direct Alpha Generation):</strong> For hedge funds and HFT firms, receiving data faster than competitors is the core of their business model. By compressing the data feed more efficiently, `phicomp` allows a trading algorithm to see market events microseconds earlier. This is a direct, revenue-generating competitive edge.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const savingsValue = document.getElementById('savings-value');
+        const rawRate = document.getElementById('raw-rate');
+        const phicompRate = document.getElementById('phicomp-rate');
+        const latencyAdvantage = document.getElementById('latency-advantage');
+        const tradeTape = document.getElementById('trade-tape');
+
+        // --- BUG FIX: ApexCharts Implementation ---
+        const chartOptions = {
+            series: [{ data: [] }],
+            chart: { type: 'candlestick', height: 450, animations: { enabled: true, dynamicAnimation: { speed: 350 } } },
+            title: { text: 'Live BTC-USD Price', align: 'left' },
+            xaxis: { type: 'datetime' },
+            yaxis: { tooltip: { enabled: true } }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#chart-container"), chartOptions);
+        chart.render();
+
+        const ws = new WebSocket(`ws://${window.location.host}/ws/market_data`);
+        let lastUpdateTime = Date.now();
+        let lastRawTotal = 0;
+        let lastPhicompTotal = 0;
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            
+            // Update the candlestick chart with the new series data
+            chart.updateSeries([{ data: data.ohlc_series }]);
+
+            // Update the scrolling trade tape
+            tradeTape.innerHTML = '';
+            data.trades.forEach(trade => {
+                const tradeEl = document.createElement('div');
+                tradeEl.className = `trade ${trade.side}`;
+                tradeEl.textContent = `${trade.side.toUpperCase()} ${trade.size.toFixed(4)} @ ${trade.price.toFixed(2)}`;
+                tradeTape.appendChild(tradeEl);
+            });
+
+            // Update the real-time metrics
+            const now = Date.now();
+            const elapsedSeconds = (now - lastUpdateTime) / 1000;
+            
+            if (elapsedSeconds >= 1) {
+                const rawBps = (data.raw_bytes_total - lastRawTotal) / elapsedSeconds;
+                const phicompBps = (data.phicomp_bytes_total - lastPhicompTotal) / elapsedSeconds;
+
+                rawRate.textContent = `${(rawBps / 1024).toFixed(2)} KB/s`;
+                phicompRate.textContent = `${(phicompBps / 1024).toFixed(2)} KB/s`;
+
+                if (data.raw_bytes_total > 0) {
+                    const savings = (1 - data.phicomp_bytes_total / data.raw_bytes_total) * 100;
+                    savingsValue.textContent = `${savings.toFixed(2)}%`;
+
+                    const linkSpeed = 10 * 1e9; // 10 Gbit/s
+                    const rawLatency = (rawBps * 8) / linkSpeed;
+                    const phicompLatency = (phicompBps * 8) / linkSpeed;
+                    const advantageMicroseconds = (rawLatency - phicompLatency) * 1e6;
+                    latencyAdvantage.textContent = `${advantageMicroseconds.toFixed(0)} µs`;
+                }
+
+                lastUpdateTime = now;
+                lastRawTotal = data.raw_bytes_total;
+                lastPhicompTotal = data.phicomp_bytes_total;
+            }
+        };
+    </script>
+</body>
+</html>

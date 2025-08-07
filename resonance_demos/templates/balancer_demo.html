@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo 1: Load Balancer Visualizer</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="demo-container">
+            <div class="demo-header">
+    <div>
+        <h2>Live Load Balancer Visualizer</h2>
+        <p>Simulating 100 requests per second to two different server clusters.</p>
+    </div>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <a href="/research">Research</a>
+        <a href="/architecture">Architecture</a>
+    </nav>
+</div>
+
+            <h3>Traditional (Round-Robin)</h3>
+            <div class="balancer-grid" id="traditional-grid"></div>
+
+            <h3>Project Resonance (PhiBalancer)</h3>
+            <div class="balancer-grid" id="resonance-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        const traditionalGrid = document.getElementById('traditional-grid');
+        const resonanceGrid = document.getElementById('resonance-grid');
+        const numServers = 100;
+
+        // Create server elements
+        for (let i = 0; i < numServers; i++) {
+            const server1 = document.createElement('div');
+            server1.className = 'server';
+            server1.id = `trad-server-${i}`;
+            traditionalGrid.appendChild(server1);
+
+            const server2 = document.createElement('div');
+            server2.className = 'server';
+            server2.id = `res-server-${i}`;
+            resonanceGrid.appendChild(server2);
+        }
+
+        // Simulate requests
+        setInterval(async () => {
+            const requestId = Math.floor(Math.random() * 1e9);
+
+            // Traditional
+            const tradResponse = await fetch(`/api/balance?method=traditional&request_id=${requestId}`);
+            const tradData = await tradResponse.json();
+            highlightServer('trad', tradData.server_index);
+
+            // Resonance
+            const resResponse = await fetch(`/api/balance?method=resonance&request_id=${requestId}`);
+            const resData = await resResponse.json();
+            highlightServer('res', resData.server_index);
+
+        }, 10); // 100 requests per second
+
+        function highlightServer(prefix, index) {
+            const server = document.getElementById(`${prefix}-server-${index}`);
+            if (server) {
+                server.classList.add('active');
+                setTimeout(() => server.classList.remove('active'), 200);
+            }
+        }
+    </script>
+</body>
+</html>

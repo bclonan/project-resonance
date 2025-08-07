@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Resonance: Interactive Demonstrations</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Add specific styles for the landing page cards */
+        .card.highlight {
+            border: 2px solid #2ecc71;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+        .card.highlight h2 {
+            color: #27ae60;
+        }
+        .card.highlight .button {
+            background-color: #27ae60;
+        }
+        .card.highlight .button:hover {
+            background-color: #229954;
+        }
+        .info-grid {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Project Resonance</h1>
+            <p class="subtitle">A Verifiable Blueprint for a New Architectural Paradigm</p>
+            <p>This suite showcases the real-world impact of building systems with **mathematical coherence**. Each demo highlights a key innovation, from state-of-the-art compression to hyper-efficient system design, all powered by algorithms derived from the Golden Ratio (φ) and backed by real, compiled C++ code.</p>
+        </header>
+
+        <div class="demo-grid">
+            <!-- VC & Business Demo Card -->
+            <div class="card highlight">
+                <h2>⭐ VC & Business Demo</h2>
+                <p>A high-impact demonstration for investors and product leaders. This live simulation of a high-frequency financial data feed proves how `phicomp` creates a multi-million dollar competitive edge through bandwidth reduction and lower latency.</p>
+                <a href="/demo/market" class="button">Launch Financial Demo</a>
+            </div>
+
+            <!-- Demo 1 Card -->
+            <div class="card">
+                <h2>Live Load Balancer Visualizer</h2>
+                <p>See the mathematical perfection of Golden Ratio distribution in action. Watch how our `PhiBalancer` evenly distributes traffic, eliminating the "hotspots" that plague traditional systems.</p>
+                <a href="/demo/balancer" class="button">Launch Demo</a>
+            </div>
+
+            <!-- Demo 2 Card -->
+            <div class="card">
+                <h2>Real-Time Compression Dashboard</h2>
+                <p>Witness the power of Fibonacci Context Modeling. This live dashboard compresses a data stream in real-time, visually comparing the bandwidth savings of `phicomp` vs. standard Gzip.</p>
+                <a href="/demo/compression" class="button">Launch Demo</a>
+            </div>
+            
+            <!-- Demo 3 Card -->
+            <div class="card">
+                <h2>Live Cloud Benchmark</h2>
+                <p>This demo runs the **actual** system benchmark using Docker & k6 in the background. You are watching the real, live terminal output from the server as it proves the 1.82x performance gain.</p>
+                <a href="/demo/cloud" class="button">Launch Demo</a>
+            </div>
+
+            <!-- Demo 4 Card -->
+            <div class="card">
+                <h2>AI Model Loading Accelerator</h2>
+                <p>A direct demonstration of value for the AI/ML industry. See how `phicomp` can dramatically reduce the time it takes to load large AI models into memory, a critical bottleneck in production AI.</p>
+                <a href="/demo/model" class="button">Launch Demo</a>
+            </div>
+        </div>
+
+        <div class="demo-grid info-grid" style="margin-top: 3rem;">
+            <!-- About Page Card -->
+            <div class="card">
+                <h2>About The Project</h2>
+                <p>Learn about the core philosophy of "mathematical coherence," the project's status as a high-fidelity reference implementation, and the author's mission.</p>
+                <a href="/about" class="button">Read More</a>
+            </div>
+
+            <!-- Research Page Card -->
+            <div class="card">
+                <h2>The Research</h2>
+                <p>Dive into the technical details. This page provides an overview of the two core research pillars and links to the full, peer-review-quality academic papers.</p>
+                <a href="/research" class="button">View Research</a>
+            </div>
+
+            <!-- Architecture Page Card -->
+            <div class="card">
+                <h2>Architecture Deep Dive</h2>
+                <p>Explore the technical architecture with diagrams that illustrate the difference between traditional stacks and the Resonance stack, and visualize how the algorithms work.</p>
+                <a href="/architecture" class="button">See Architecture</a>
+            </div>
+        </div>
+
+        <footer>
+            <p>Project by Bradley Clonan | <a href="https://github.com/bclonan/project-resonance" target="_blank">View on GitHub</a></p>
+        </footer>
+    </div>
+</body>
+</html>
