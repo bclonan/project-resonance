@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VC Demo: Procedural Generation with Modlo Sequence</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        #city-container {
+            height: 500px;
+            border: 1px solid #ecf0f1;
+            border-radius: 5px;
+            background: linear-gradient(to bottom, #34495e 0%, #2c3e50 100%);
+            overflow: hidden;
+            position: relative;
+        }
+        .building {
+            position: absolute;
+            bottom: 0;
+            background-color: #95a5a6;
+            transition: all 0.5s ease-in-out;
+        }
+        .controls {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+        }
+        .controls input {
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid #bdc3c7;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="demo-container">
+            <div class="demo-header">
+                <div>
+                    <h2>VC Demo: Procedural Generation with the Modlo Sequence</h2>
+                    <p>Demonstrating how a massive, complex city can be generated from a tiny seed number.</p>
+                </div>
+                <a href="/" class="back-link">← Back to Demos</a>
+            </div>
+
+            <div id="city-container"></div>
+
+            <div class="controls">
+                <label for="seed-input">City Seed:</label>
+                <input type="text" id="seed-input" value="1337">
+                <button id="generateButton" class="button">Generate City</button>
+            </div>
+
+            <div class="explanation-box" style="margin-top: 2rem; border-left-color: #2ecc71;">
+                <h3>The Multi-Billion Dollar Application: Gaming & Metaverse</h3>
+                <p>Storing the data for a massive, open-world game or a metaverse environment can require hundreds of gigabytes. This demo showcases **procedural content generation (PCG)**, a technique that revolutionizes how digital worlds are built.</p>
+                <ul>
+                    <li><strong>The Innovation:</strong> Instead of storing the city, we only store a tiny "seed" number. Our unique **Modlo Sequence** algorithm uses this seed to "grow" the entire city skyline in real-time, complete with unique landmark buildings and consistent background structures.</li>
+                    <li><strong>The Business Impact:</strong> This technique allows developers to create exponentially larger and more detailed worlds with a fraction of the storage and bandwidth costs. It's a critical enabling technology for the future of immersive gaming and the metaverse.</li>
+                </ul>
+                <p><strong>Try it yourself:</strong> Change the seed number and click "Generate City". You'll see a completely different, but equally complex, city appear instantly. The entire city you see is generated from that single number.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cityContainer = document.getElementById('city-container');
+        const seedInput = document.getElementById('seed-input');
+        const generateButton = document.getElementById('generateButton');
+
+        const colorPalette = ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#e74c3c'];
+
+        async function generateCity() {
+            const seed = seedInput.value || '0';
+            const response = await fetch(`/api/generate_city?seed=${encodeURIComponent(seed)}&num_buildings=100`);
+            const data = await response.json();
+
+            cityContainer.innerHTML = ''; // Clear previous city
+            let currentX = 0;
+
+            data.buildings.forEach(b => {
+                const building = document.createElement('div');
+                building.className = 'building';
+                building.style.height = `${b.height}px`;
+                building.style.width = `${b.width}px`;
+                building.style.left = `${currentX}px`;
+                building.style.backgroundColor = colorPalette[b.color_val % colorPalette.length];
+                
+                // Add some subtle detail
+                building.style.opacity = Math.random() * 0.3 + 0.7;
+
+                cityContainer.appendChild(building);
+                currentX += b.width + Math.random() * 10 - 4; // Add small, random gaps
+            });
+        }
+
+        generateButton.addEventListener('click', generateCity);
+        
+        // Generate the initial city on page load
+        generateCity();
+    </script>
+</body>
+</html>

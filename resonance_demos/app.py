@@ -12,6 +12,12 @@ import json
 import websockets
 from fastapi import UploadFile, File
 
+from phiresearch_systems.generators import modlo_sequence
+# --- Ensure we can find the parent resonance directory ---
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+# --- Ensure we can find the phiresearch_compression library ---
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../phiresearch_compression")))
+
 # --- Ensure Project Resonance libraries are importable ---
 # This assumes the main 'resonance' project was installed via 'pip install .'
 try:
@@ -337,6 +343,33 @@ async def market_data_stream(websocket: WebSocket):
     finally:
         clients.remove(websocket)
         await websocket.close()
+        
+# =================================================================================
+# DEMO 7: PROCEDURAL CITY GENERATION (MODLO SEQUENCE)
+# =================================================================================
+@app.get("/api/generate_city")
+def generate_city(seed: int = 0, num_buildings: int = 100):
+    """
+    Uses the Modlo Sequence to procedurally generate a city skyline.
+    The seed makes the generation deterministic and reproducible.
+    """
+    # Use the seed to make the generation predictable
+    random.seed(seed)
+    
+    # Generate the building parameters from the Modlo Sequence
+    height_sequence = modlo_sequence(num_buildings)
+    width_sequence = modlo_sequence(num_buildings + 5)[5:] # Offset for variety
+    color_sequence = modlo_sequence(num_buildings + 10)[10:]
+
+    buildings = []
+    for i in range(num_buildings):
+        buildings.append({
+            "height": height_sequence[i] * random.uniform(8, 15),
+            "width": width_sequence[i] * random.uniform(4, 6),
+            "color_val": color_sequence[i]
+        })
+    
+    return {"buildings": buildings}
 
 # =================================================================================
 # HTML Page Routing

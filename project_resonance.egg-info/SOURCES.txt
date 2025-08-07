@@ -11,6 +11,7 @@ phiresearch_systems/__init__.py
 phiresearch_systems/balancing.py
 phiresearch_systems/caching.py
 phiresearch_systems/database.py
+phiresearch_systems/generators.py
 project_resonance.egg-info/PKG-INFO
 project_resonance.egg-info/SOURCES.txt
 project_resonance.egg-info/dependency_links.txt
