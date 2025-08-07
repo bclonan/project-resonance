@@ -1,23 +1,26 @@
-# This is the definitive, production-ready configuration file for Netlify.
+# This configuration tells Netlify how to build and deploy the Python-based demo site.
 
 [build]
-  # The command to build the entire project.
-  command = "pip install --upgrade pip && pip install -e .[benchmark,demos]"
+  # 1. Install project dependencies: This command installs the main 'project-resonance'
+  #    package in editable mode, along with the extras needed for the demos.
+  #    You should define a 'demos' extra in your setup.py or pyproject.toml.
+  command = "pip install --upgrade pip && pip install -e .[demos]"
   
-  # The directory containing the serverless function.
+  # 2. Serverless Functions: This is where Netlify will find the Python handler for the site.
   functions = "netlify/functions/"
   
-  # --- DEFINITIVE FIX ---
-  # The publish directory should ONLY contain assets that are served directly.
-  # All our HTML pages are dynamic templates, so only 'static' is needed here.
+  # 3. Static Assets: This directory contains static files (CSS, JS, images) that
+  #    Netlify can serve directly for better performance.
   publish = "resonance_demos/static/"
 
-# --- DEFINITIVE FIX ---
-# This is the magic rule. It tells Netlify to route ALL incoming requests
-# (like /, /about, /demo/market, /api/balance) to our Python serverless function.
-# Netlify's engine is smart enough to check for a static file in the 'publish'
-# directory first (e.g., /css/style.css) before applying this rule.
+[build.environment]
+  # Specify the Python version for the build environment.
+  PYTHON_VERSION = "3.10"
+
+# This rule is crucial. It directs all incoming traffic (e.g., /, /about, /demo/...)
+# to the serverless function that runs the FastAPI app. Netlify is smart enough
+# to serve any matching static files from the 'publish' directory first.
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/main"
   status = 200

@@ -10,3 +10,8 @@
     uvicorn app:app --reload
     ```
 4.  **Open Your Browser:** Navigate to `http://127.0.0.1:8000`. You will see the main landing page, and from there you can launch each of the four interactive demos.
+5.  
+
+## How to build and deploy the demos
+
+1. 
