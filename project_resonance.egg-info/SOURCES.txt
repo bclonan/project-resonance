@@ -6,7 +6,6 @@ phiresearch_compression/__init__.py
 phiresearch_compression/compressor.py
 phiresearch_compression/utils.py
 phiresearch_compression/core/fcm_core.cpp
-phiresearch_compression/core/fcm_core.cpp
 phiresearch_systems/__init__.py
 phiresearch_systems/balancing.py
 phiresearch_systems/caching.py
@@ -16,4 +15,5 @@ project_resonance.egg-info/PKG-INFO
 project_resonance.egg-info/SOURCES.txt
 project_resonance.egg-info/dependency_links.txt
 project_resonance.egg-info/not-zip-safe
+project_resonance.egg-info/requires.txt
 project_resonance.egg-info/top_level.txt

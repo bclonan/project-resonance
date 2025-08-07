@@ -1,4 +1,4 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.1
 Name: project-resonance
 Version: 1.0.1
 Summary: A collection of high-performance system components based on mathematical coherence.
@@ -15,7 +15,8 @@ Classifier: Development Status :: 4 - Beta
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Dynamic: license-file
+Requires-Dist: setuptools>=75.3.2
+Requires-Dist: uvicorn>=0.33.0
 
 # **Project Resonance**
 

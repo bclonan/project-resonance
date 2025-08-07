@@ -2,3 +2,15 @@ modules = ["nodejs-20", "web", "python-3.8", "cpp-clang14"]
 
 [nix]
 channel = "stable-25_05"
+
+[workflows]
+runButton = "Run Resonance Demos"
+
+[[workflows.workflow]]
+name = "Run Resonance Demos"
+author = 1686451
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
