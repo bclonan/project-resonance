@@ -1,4 +1,4 @@
-# **Project Resonance**
+# Project Resonance
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Status: Reference Implementation](https://img.shields.io/badge/status-reference_implementation-green)](./README.md#project-status)
@@ -6,38 +6,215 @@
 
 ## Project Status: A High-Fidelity Reference Implementation
 
-**Please Note:** Project Resonance is a **functional, high-fidelity reference implementation** of the novel concepts discussed in the accompanying research papers. The goal of this repository is to provide a complete, explorable, and verifiable blueprint for a new architectural paradigm, backed by real, working C++ code and measurable benchmarks.
+Project Resonance is a functional, high-fidelity reference implementation of the concepts in our papers. It provides a complete, verifiable blueprint backed by real C++ code and measurable benchmarks.
 
 ## The Core Philosophy: Mathematical Coherence
 
-Traditional distributed systems are built from a collection of disparate, individually optimized components. This often leads to friction and unpredictable performance bottlenecks at the integration points.
-
-The thesis of Project Resonance is that a system whose core components are all built upon the same underlying mathematical foundation—in this case, algorithms derived from the Golden Ratio (φ)—will exhibit **emergent performance characteristics** that far exceed the sum of its parts. This project provides a concrete implementation and validation of this "Cross-Component Resonance" effect.
+We unify core components on a single mathematical foundation—algorithms derived from the Golden Ratio (φ)—to produce emergent performance characteristics that exceed the sum of parts.
 
 ## Key Achievements
 
-This project successfully accomplishes three major, tangible goals, all verifiable through the code in this repository:
+1. **Novel Compression (`phicomp`)**
+   - C++-backed Fibonacci Context Modeling (FCM)
+   - Reproducible Calgary Corpus results, ~94.88% of Shannon limit
 
-1.  **A Novel, State-of-the-Art Compression Algorithm (`phicomp`)**
-    We have designed and implemented a C++-backed library based on **Fibonacci Context Modeling (FCM)**. The benchmark against the standard Calgary Corpus is real and reproducible, showing that the code achieves an average Shannon efficiency of **94.88%**. This is a world-class result, competitive with the best statistical compressors and proving that the FCM concept is a genuine advancement in compression theory.
+1. **System Throughput Validation**
+   - Containerized benchmark shows ~1.82x throughput vs a traditional Nginx stack
 
-2.  **Validation of the "Mathematical Coherence" Hypothesis**
-    We have designed and benchmarked a full system stack where all components are unified by a single mathematical principle. The containerized benchmark demonstrates that our Resonance stack, by using a mathematically superior distribution algorithm, achieves a **1.82x performance throughput** over a standard Nginx-based stack. This is a massive win in systems engineering, proving the hypothesis is a practical design principle that yields significant gains.
+1. **Complete Research Artifact**
+   - Papers, C++ reference implementation, automated benchmarks
 
-3.  **A Complete and Verifiable Research Artifact**
-    The ultimate achievement is the repository itself. It contains peer-review-quality design documents (the papers), a full C++ source-code implementation of the novel concepts, and robust, automated benchmark scripts to allow any third party to verify our claims.
+## Interactive 3D: Golden Ratio Model (φ)
+
+GitHub renders ASCII STL inline. The model shows a thin golden rectangle: a 1×1 square (left) plus a 1×(φ−1) (~0.618) rectangle (right).
+
+```stl
+solid phi_square
+  facet normal 0 0 1
+    outer loop
+      vertex 0.0 0.0 0.05
+      vertex 1.0 0.0 0.05
+      vertex 1.0 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 0.0 0.0 0.05
+      vertex 1.0 1.0 0.05
+      vertex 0.0 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0.0 0.0 0.0
+      vertex 1.0 1.0 0.0
+      vertex 1.0 0.0 0.0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0.0 0.0 0.0
+      vertex 0.0 1.0 0.0
+      vertex 1.0 1.0 0.0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0.0 0.0 0.0
+      vertex 0.0 0.0 0.05
+      vertex 0.0 1.0 0.05
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0.0 0.0 0.0
+      vertex 0.0 1.0 0.05
+      vertex 0.0 1.0 0.0
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.0 1.0 0.05
+      vertex 1.0 0.0 0.05
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.0 1.0 0.0
+      vertex 1.0 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0.0 0.0 0.0
+      vertex 1.0 0.0 0.05
+      vertex 1.0 0.0 0.0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0.0 0.0 0.0
+      vertex 0.0 0.0 0.05
+      vertex 1.0 0.0 0.05
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0.0 1.0 0.0
+      vertex 1.0 1.0 0.0
+      vertex 1.0 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0.0 1.0 0.0
+      vertex 1.0 1.0 0.05
+      vertex 0.0 1.0 0.05
+    endloop
+  endfacet
+endsolid
+
+solid phi_minor_rect
+  facet normal 0 0 1
+    outer loop
+      vertex 1.0 0.0 0.05
+      vertex 1.6180339 0.0 0.05
+      vertex 1.6180339 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 1.0 0.0 0.05
+      vertex 1.6180339 1.0 0.05
+      vertex 1.0 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.6180339 1.0 0.0
+      vertex 1.6180339 0.0 0.0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.0 1.0 0.0
+      vertex 1.6180339 1.0 0.0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.0 0.0 0.05
+      vertex 1.0 1.0 0.05
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.0 1.0 0.05
+      vertex 1.0 1.0 0.0
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1.6180339 0.0 0.0
+      vertex 1.6180339 1.0 0.05
+      vertex 1.6180339 0.0 0.05
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1.6180339 0.0 0.0
+      vertex 1.6180339 1.0 0.0
+      vertex 1.6180339 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.6180339 0.0 0.05
+      vertex 1.6180339 0.0 0.0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex 1.0 0.0 0.05
+      vertex 1.6180339 0.0 0.05
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 1.0 1.0 0.0
+      vertex 1.6180339 1.0 0.0
+      vertex 1.6180339 1.0 0.05
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 1.0 1.0 0.0
+      vertex 1.6180339 1.0 0.05
+      vertex 1.0 1.0 0.05
+    endloop
+  endfacet
+endsolid
+```
 
 ## Getting Started: Installation & Verification
 
-You can compile the C++ core and run the verification benchmarks yourself.
+You can compile the C++ core and run the verification benchmarks.
 
 ### Prerequisites
 
--   Python 3.8+
--   A C++17 compliant compiler (e.g., GCC, Clang, or MSVC Build Tools)
--   `pip` and `setuptools`
--   `pybind11`
--   Docker and Docker Compose (for the system-level benchmark)
+- Python 3.8+
+- A C++17 compliant compiler (GCC, Clang, or MSVC Build Tools)
+- `pip` and `setuptools`
+- `pybind11`
+- Docker and Docker Compose
 
 ### Installation
 
@@ -49,46 +226,30 @@ cd project-resonance
 # 2. Install the libraries and their C++ bindings
 pip install .
 ```
-*Note for Windows users: If the installation fails, you may need to install the "Microsoft C++ Build Tools" and ensure they are available in your terminal's path.*
 
 ### Running the Demonstrations
 
-1.  **Verify the Compression Algorithm:**
-    ```bash
-    python benchmarks/run_compression_benchmark.py
-    ```
-    This script will download the Calgary Corpus and run the `phicomp` library against it, producing the 94.88% efficiency result.
+1. **Verify the Compression Algorithm:**
 
-2.  **Verify the System Resonance Effect:**
-    ```bash
-    python benchmarks/system/run_system_benchmark.py
-    ```
-    This script will use Docker to build and test both the traditional and Resonance stacks, producing the 1.82x throughput result.
+```bash
+python benchmarks/run_compression_benchmark.py
+```
+
+1. **Verify the System Resonance Effect:**
+
+```bash
+python system/run_system_benchmark.py
+```
 
 ## Author & Contact Information
 
-This project was created and is led by me, **Bradley Clonan**.
+This project was created and is led by **Bradley Clonan**.
 
-I am a passionate software engineer with a deep interest in high-performance computing, systems architecture, and applying novel mathematical concepts to solve complex engineering problems. This repository serves as a testament to my skills in C++, Python, algorithm design, and rigorous systems-level testing.
+I’m a software engineer focused on high-performance computing, systems architecture, and applying mathematical ideas to real systems. This repo demonstrates C++, Python, algorithm design, and rigorous systems testing.
 
-**I am actively seeking full-time opportunities** in software engineering, systems design, and performance optimization. If you are impressed by this work and have a challenging role available, I would be delighted to connect.
-
--   **Email:** `clonanxyz@gmail.com`
--   **GitHub:** [github.com/bclonan](https://github.com/bclonan)
+- Email: `clonanxyz@gmail.com`
+- GitHub: [github.com/bclonan](https://github.com/bclonan)
 
 ## License
 
-This project is licensed under the **Apache License, Version 2.0**. See the [LICENSE](LICENSE) file for details.
-
-
-
-## Run benchmarks
-
-```
-python resonance/benchmarks/run_compression_benchmark.py
-```
-
-**ensure docker is running**
-
-```
-python resonance/benchmarks/system/run_system_benchmark.py
+Apache License 2.0. See [LICENSE](LICENSE).
