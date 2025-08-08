@@ -34,6 +34,10 @@
                     <div class="progress-bar" id="phicomp-progress" style="background-color: #2ecc71;">0%</div>
                 </div>
                 <p id="phicomp-stats">Size: - | Time: -</p>
+                <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:6px;">
+                    <strong>Try it yourself:</strong>
+                    <button id="btnDownloadSummary" class="button" style="margin-left:0.5rem;">Download run summary (JSON)</button>
+                </div>
             </div>
         </div>
     </div>
@@ -80,6 +84,12 @@
                     const improvement = ((results.raw_time - results.phicomp_time) / results.raw_time * 100).toFixed(0);
                     statusText.textContent = `Status: Complete! Accelerated loading was ${improvement}% faster.`;
                     loadButton.disabled = false;
+                    document.getElementById('btnDownloadSummary').onclick = () => {
+                        const payload = JSON.stringify(results);
+                        const a = document.createElement('a');
+                        a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(payload);
+                        a.download = 'model_load_summary.json'; a.click();
+                    };
                 } else if (data.status === 'error') {
                     clearInterval(interval);
                     statusText.textContent = `Status: Error! ${data.results}`;

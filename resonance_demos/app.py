@@ -9,6 +9,7 @@ import sys
 import time
 import json
 import subprocess
+import hashlib
 import functools
 
 from fastapi import FastAPI, Request, WebSocket, BackgroundTasks, UploadFile, File
@@ -22,6 +23,7 @@ import websockets
 try:
     import phiresearch_compression as phicomp
     from phiresearch_systems import PhiBalancer, PhiCache, PhiDB, modlo_sequence
+    cb = getattr(phicomp, "core_bindings", None)
 except ImportError:
     print("="*80)
     print("FATAL ERROR: Could not import Project Resonance libraries.")
@@ -60,6 +62,31 @@ def get_balanced_server(method: str, request_id: int):
         server_index = traditional_counter
         traditional_counter = (traditional_counter + 1) % NUM_SERVERS
         return {"server_index": server_index}
+
+@app.get("/api/balance_stats")
+def get_balance_stats(method: str = "resonance", n: int = 10000, seed: int = 42):
+    """Compute distribution stats over n simulated requests for each method.
+    Returns histogram and basic fairness metrics (spread and stddev).
+    """
+    rng = random.Random(seed)
+    counts = [0] * NUM_SERVERS
+    if method == "traditional":
+        # Deterministic round-robin independent of global state
+        for i in range(n):
+            server_index = i % NUM_SERVERS
+            counts[server_index] += 1
+    else:
+        for _ in range(n):
+            req_id = rng.randint(0, 1_000_000_000)
+            server_name = phi_balancer.get_server_for_request(str(req_id))
+            idx = int(server_name.split('_')[1])
+            counts[idx] += 1
+    total = sum(counts) or 1
+    mean = total / NUM_SERVERS
+    var = sum((c - mean) ** 2 for c in counts) / NUM_SERVERS
+    stddev = var ** 0.5
+    spread = max(counts) - min(counts)
+    return {"method": method, "n": n, "seed": seed, "counts": counts, "spread": spread, "stddev": stddev}
 
 # =================================================================================
 # DEMO 2: REAL-TIME COMPRESSION & FILE UPLOAD
@@ -100,11 +127,23 @@ async def compress_file_endpoint(file: UploadFile = File(...)):
         start_time = time.perf_counter()
         compressed_contents = phicomp.compress(contents)
         end_time = time.perf_counter()
+        # Verify roundtrip and compute hashes for proof
+        sha_orig = hashlib.sha256(contents).hexdigest()
+        try:
+            recovered = phicomp.decompress(compressed_contents)
+            sha_round = hashlib.sha256(recovered).hexdigest()
+            roundtrip_ok = (recovered == contents)
+        except Exception:
+            sha_round = None
+            roundtrip_ok = False
         return {
             "filename": file.filename,
             "original_size": len(contents),
             "compressed_size": len(compressed_contents),
-            "compression_time_ms": (end_time - start_time) * 1000
+            "compression_time_ms": (end_time - start_time) * 1000,
+            "roundtrip_ok": roundtrip_ok,
+            "sha256_original": sha_orig,
+            "sha256_roundtrip": sha_round
         }
     except Exception as e:
         print(f"Error during file compression: {e}")
@@ -205,6 +244,32 @@ def get_load_status():
     return model_load_status
 
 # =================================================================================
+# DEMO: RGBD Bias roundtrip tester
+# =================================================================================
+@app.post("/api/rgbd_test")
+async def rgbd_test(request: Request):
+    """Round-trip a short payload with/without RGBD bias and report sizes & equality."""
+    if cb is None:
+        return {"error": "RGBD core bindings are unavailable in this build."}
+    try:
+        body = await request.json()
+    except Exception:
+        return {"error": "Invalid JSON"}
+    text = body.get("text", "Example payload...")
+    use_rgbd = bool(body.get("use_rgbd", False))
+    weight = float(body.get("weight", 0.2))
+    try:
+        cb.reset_rgbd_state()
+        cb.set_rgbd_options(use_rgbd, weight)
+        comp = phicomp.compress(text.encode("utf-8"))
+        cb.reset_rgbd_state()
+        decomp = phicomp.decompress(comp)
+        ok = decomp == text.encode("utf-8")
+        return {"original": len(text.encode("utf-8")), "compressed": len(comp), "roundtrip_ok": ok}
+    except Exception as e:
+        return {"error": str(e)}
+
+# =================================================================================
 # VC DEMO 1: LIVE FINANCIAL MARKET DATA
 # =================================================================================
 BITSTAMP_WS_URL = "wss://ws.bitstamp.net"
@@ -239,7 +304,12 @@ async def market_feed_manager():
                         if len(latest_market_data["ohlc_series"]) > 100: latest_market_data["ohlc_series"].pop(0)
                         latest_market_data["trades"].insert(0, {"price": price, "size": size, "side": side})
                         if len(latest_market_data["trades"]) > 20: latest_market_data["trades"].pop()
-                        raw_payload_bytes = message.encode('utf-8')  # Convert string to bytes
+                        # message can be str/bytes; ensure bytes
+                        if isinstance(message, (bytes, bytearray, memoryview)):
+                            raw_payload_bytes = bytes(message)
+                        else:
+                            # ensure deterministic serialization when needed
+                            raw_payload_bytes = message.encode('utf-8')
                         compressed_payload_bytes = phicomp.compress(raw_payload_bytes)
                         latest_market_data["raw_bytes_total"] += len(raw_payload_bytes)
                         latest_market_data["phicomp_bytes_total"] += len(compressed_payload_bytes)

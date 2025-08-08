@@ -57,6 +57,12 @@
                     <li><strong>Latency Advantage (Direct Alpha Generation):</strong> For hedge funds and HFT firms, receiving data faster than competitors is the core of their business model. By compressing the data feed more efficiently, `phicomp` allows a trading algorithm to see market events microseconds earlier. This is a direct, revenue-generating competitive edge.</li>
                 </ul>
             </div>
+            <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:5px;">
+                <strong>Try it yourself:</strong>
+                <p style="margin:0.5rem 0 0.75rem 0;color:#7f8c8d;">Capture a 10s snapshot and download metrics for offline checks.</p>
+                <button id="btnRecord" class="button">Record 10s snapshot to CSV</button>
+                <span id="recordOut" style="margin-left:0.5rem;color:#7f8c8d;"></span>
+            </div>
         </div>
     </div>
 
@@ -126,6 +132,26 @@
                 lastPhicompTotal = data.phicomp_bytes_total;
             }
         };
+
+        // Snapshot recorder (10 seconds)
+        let recording = false; let rows = [];
+        document.getElementById('btnRecord').addEventListener('click', () => {
+            if (recording) return;
+            recording = true; rows = [['ts','raw_bytes_total','phicomp_bytes_total']];
+            const start = Date.now();
+            const handle = setInterval(() => {
+                const ts = Date.now();
+                rows.push([ts, lastRawTotal, lastPhicompTotal]);
+                if (ts - start >= 10_000){
+                    clearInterval(handle); recording = false;
+                    const csv = rows.map(r=>r.join(',')).join('\n');
+                    const a = document.createElement('a');
+                    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+                    a.download = 'market_snapshot.csv'; a.click();
+                    document.getElementById('recordOut').textContent = 'Saved market_snapshot.csv';
+                }
+            }, 500);
+        });
     </script>
 </body>
 </html>

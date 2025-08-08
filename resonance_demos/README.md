@@ -27,6 +27,15 @@ Then open <http://127.0.0.1:8000> in your browser.
 - Market data demo: Live BTC/USD feed with OHLC charts; tracks raw vs phicomp-compressed byte totals.
 - Modlo grid demo: Procedural grid generator to visualize sequence dynamics.
 
+### Verify bold claims hands-on (Modlo demo)
+
+Under the Modlo grid demo, we include quick actions for self-verification:
+
+- Export grid as JSON: Builds a world layout from the seed and downloads a tiny JSON file. Share only the seed; others can reproduce the same world.
+- Compute fingerprint: Produces a short, deterministic code for the current seed/world. Two people with the same seed should see the same code.
+- Generate deterministic price series (CSV): Creates a reproducible HFT-like time series from the seed. Great for backtesting consistency.
+- Generate 1000 sensor states (JSON): Outputs a deterministic snapshot for a digital twin simulation. Share the seed to sync states across teams.
+
 ## Real-world usage examples
 
 - API payload compression:
@@ -78,3 +87,5 @@ Path("/var/archive/logs.bin").write_bytes(blob)
 - Windows users need MSVC Build Tools.
 - For serverless hosting (Netlify), see repo root README and `netlify/functions/`.
 - Experimental RGBD bias can be toggled via `phiresearch_compression.core_bindings.set_rgbd_options(use_rgbd, weight)`.
+
+Tip: If a teammate gets a different result, confirm you’re using the exact same seed string (case and whitespace matter). Then click Compute fingerprint — it must match on both sides.

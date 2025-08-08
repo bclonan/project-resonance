@@ -25,6 +25,11 @@
             <div class="terminal" id="terminal">
                 <p><span class="prompt">$</span> Waiting to start...</p>
             </div>
+            <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:6px;">
+                <strong>Try it yourself:</strong>
+                <button id="btnSaveLogs" class="button" style="margin-left:0.5rem;">Save 30s log snapshot</button>
+                <span id="saveOut" style="margin-left:0.5rem;color:#7f8c8d;"></span>
+            </div>
         </div>
     </div>
 
@@ -32,6 +37,7 @@
         const startButton = document.getElementById('startButton');
         const terminal = document.getElementById('terminal');
         let ws;
+    let recording = false; let logs = [];
 
         function addLogLine(text, type = 'output') {
             const p = document.createElement('p');
@@ -71,6 +77,7 @@
             ws.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 addLogLine(data.line, data.type);
+                if (recording) logs.push(`${new Date().toISOString()},${data.type},${data.line.replaceAll(',', ';')}`);
             };
 
             ws.onclose = function(event) {
@@ -88,6 +95,21 @@
                 startButton.disabled = false;
                 startButton.textContent = 'Start Live Benchmark';
             };
+        });
+
+        document.getElementById('btnSaveLogs').addEventListener('click', () => {
+            if (recording) return;
+            recording = true; logs = [['ts','type','line'].join(',')];
+            const start = Date.now();
+            const handle = setInterval(() => {
+                if (Date.now() - start >= 30_000) {
+                    clearInterval(handle); recording = false;
+                    const csv = logs.join('\n');
+                    const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+                    a.download = 'cloud_benchmark_logs.csv'; a.click();
+                    document.getElementById('saveOut').textContent = 'Saved cloud_benchmark_logs.csv';
+                }
+            }, 1000);
         });
     </script>
 </body>

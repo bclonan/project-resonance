@@ -37,6 +37,14 @@
             <p style="margin-top:1rem;font-size:0.95rem;color:#7f8c8d;">
                 Verify it yourself: watch how the green cluster lights up more evenly over time than the traditional one—this means more consistent latency.
             </p>
+            <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:6px;">
+                <strong>Try it yourself:</strong>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+                    <button id="btnCheckTrad" class="button">Measure fairness (Traditional)</button>
+                    <button id="btnCheckPhi" class="button" style="background:#9b59b6;">Measure fairness (PhiBalancer)</button>
+                    <span id="fairnessOut" style="align-self:center;color:#7f8c8d;"></span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -81,6 +89,15 @@
                 setTimeout(() => server.classList.remove('active'), 200);
             }
         }
+
+        // Fairness checks
+        async function check(method){
+            const res = await fetch(`/api/balance_stats?method=${method}&n=10000&seed=42`);
+            const data = await res.json();
+            document.getElementById('fairnessOut').textContent = `${method}: spread=${data.spread} stddev=${data.stddev.toFixed(2)}`;
+        }
+        document.getElementById('btnCheckTrad').addEventListener('click', () => check('traditional'));
+        document.getElementById('btnCheckPhi').addEventListener('click', () => check('resonance'));
     </script>
 </body>
 </html>

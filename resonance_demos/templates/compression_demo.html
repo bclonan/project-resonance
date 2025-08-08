@@ -49,6 +49,7 @@
             <div class="tabs">
                 <button class="tab-button active" onclick="openTab(event, 'streaming')">Streaming & File Transfer</button>
                 <button class="tab-button" onclick="openTab(event, 'metrics')">Key Performance Metrics</button>
+                <button class="tab-button" onclick="openTab(event, 'verify')">Verify It Yourself</button>
             </div>
 
             <!-- TAB 1: STREAMING DEMO -->
@@ -100,6 +101,17 @@
                         <span class="value">~15 MB/s</span>
                         <span>(Single-threaded C++ reference implementation)</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: VERIFY -->
+            <div id="verify" class="tab-content">
+                <h3>Verify the Claims Yourself</h3>
+                <p>Download a tiny sample, compress it server-side, and check hashes for a provable round-trip.</p>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+                    <button id="btnSample" class="button">Download sample payload</button>
+                    <button id="btnServerCompress" class="button" style="background:#9b59b6;">Ask server to compress sample</button>
+                    <span id="verifyOut" style="align-self:center;color:#7f8c8d;"></span>
                 </div>
             </div>
         </div>
@@ -227,6 +239,22 @@
             }
             window.requestAnimationFrame(step);
         }
+
+        // --- VERIFY TAB LOGIC ---
+        const sampleBytes = new TextEncoder().encode('The quick brown fox jumps over the lazy dog. '.repeat(128));
+        function downloadBlob(name, bytes, mime='application/octet-stream'){
+            const blob = new Blob([bytes], {type: mime});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+        }
+        document.getElementById('btnSample').addEventListener('click', ()=> downloadBlob('sample.txt', sampleBytes, 'text/plain'));
+        document.getElementById('btnServerCompress').addEventListener('click', async ()=>{
+            const f = new File([sampleBytes], 'sample.txt', {type:'text/plain'});
+            const fd = new FormData(); fd.append('file', f);
+            const res = await fetch('/api/compress_file', { method:'POST', body: fd });
+            const data = await res.json();
+            const ok = data.roundtrip_ok ? 'OK' : 'FAIL';
+            document.getElementById('verifyOut').textContent = `Round-trip: ${ok} | sha256(orig)=${data.sha256_original?.slice(0,12)}... sha256(round)=${data.sha256_roundtrip?.slice(0,12)}...`;
+        });
     </script>
 </body>
 </html>
