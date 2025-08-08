@@ -13,10 +13,12 @@ import hashlib
 import functools
 
 from fastapi import FastAPI, Request, WebSocket, BackgroundTasks, UploadFile, File
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import websockets
+from collections import deque
+import zlib
 
 # --- Ensure Project Resonance libraries are importable ---
 # This assumes the main 'resonance' project was installed via 'pip install .'
@@ -274,9 +276,16 @@ async def rgbd_test(request: Request):
 # =================================================================================
 BITSTAMP_WS_URL = "wss://ws.bitstamp.net"
 BITSTAMP_SUBSCRIBE_MESSAGE = {"event": "bts:subscribe", "data": {"channel": "live_trades_btcusd"}}
-latest_market_data = {"ohlc_series": [], "trades": [], "raw_bytes_total": 0, "phicomp_bytes_total": 0}
+latest_market_data = {
+    "ohlc_series": [],
+    "trades": [],
+    "raw_bytes_total": 0,
+    "phicomp_bytes_total": 0,
+    "gzip_bytes_total": 0,
+}
 clients = set()
 ohlc_open = None
+raw_message_log = deque(maxlen=20000)  # (ts_ms, raw_message_str)
 
 async def market_feed_manager():
     """Connects to the LIVE Bitstamp WebSocket and processes the data feed."""
@@ -304,15 +313,23 @@ async def market_feed_manager():
                         if len(latest_market_data["ohlc_series"]) > 100: latest_market_data["ohlc_series"].pop(0)
                         latest_market_data["trades"].insert(0, {"price": price, "size": size, "side": side})
                         if len(latest_market_data["trades"]) > 20: latest_market_data["trades"].pop()
-                        # message can be str/bytes; ensure bytes
+                        # message can be str/bytes; ensure bytes and keep textual for logs
                         if isinstance(message, (bytes, bytearray, memoryview)):
                             raw_payload_bytes = bytes(message)
+                            raw_payload_text = raw_payload_bytes.decode('utf-8', errors='ignore')
                         else:
-                            # ensure deterministic serialization when needed
+                            raw_payload_text = message
                             raw_payload_bytes = message.encode('utf-8')
+                        # track rolling log for snapshots
+                        raw_message_log.append((current_time_ms, raw_payload_text))
+
+                        # compute baselines
                         compressed_payload_bytes = phicomp.compress(raw_payload_bytes)
+                        gz_bytes = zlib.compress(raw_payload_bytes, level=6)
+                        # accumulate totals
                         latest_market_data["raw_bytes_total"] += len(raw_payload_bytes)
                         latest_market_data["phicomp_bytes_total"] += len(compressed_payload_bytes)
+                        latest_market_data["gzip_bytes_total"] += len(gz_bytes)
                         if clients:
                             for client in clients: asyncio.create_task(client.send_json(latest_market_data))
         except Exception as e:
@@ -337,6 +354,64 @@ async def market_data_stream(websocket: WebSocket):
     finally:
         clients.remove(websocket)
         await websocket.close()
+
+# =================================================================================
+# MARKET SNAPSHOT DOWNLOAD (verifiable ZIP)
+# =================================================================================
+@app.get("/api/market_snapshot")
+def download_market_snapshot(duration_s: int = 10):
+    """Return a ZIP containing:
+    - raw.ndjson: raw Bitstamp messages for last duration_s seconds (one per line)
+    - phicomp.bin: phicomp-compressed concatenation of raw messages (utf-8)
+    - gzip.bin: gzip(combined_raw)
+    - brotli.bin: brotli(combined_raw) if available
+    - stats.json: sizes, savings vs raw/gzip, sha256(original), sha256(roundtrip_phicomp)
+    """
+    now_ms = int(time.time() * 1000)
+    window_ms = max(1, int(duration_s)) * 1000
+    # collect window
+    selected = [s for (ts, s) in list(raw_message_log) if ts >= now_ms - window_ms]
+    raw_text = "\n".join(selected) + ("\n" if selected else "")
+    raw_bytes = raw_text.encode('utf-8')
+    # compress
+    phicomp_bytes = phicomp.compress(raw_bytes)
+    gzip_bytes = zlib.compress(raw_bytes, level=6)
+    # verify roundtrip on server
+    try:
+        roundtrip = phicomp.decompress(phicomp_bytes)
+        roundtrip_ok = roundtrip == raw_bytes
+    except Exception:
+        roundtrip = b""
+        roundtrip_ok = False
+    # stats
+    import hashlib as _hl
+    sha_raw = _hl.sha256(raw_bytes).hexdigest()
+    sha_round = _hl.sha256(roundtrip).hexdigest() if roundtrip_ok else None
+    stats = {
+        "messages": len(selected),
+        "raw_bytes": len(raw_bytes),
+        "phicomp_bytes": len(phicomp_bytes),
+        "gzip_bytes": len(gzip_bytes),
+        "savings_vs_raw_phicomp_pct": (1 - (len(phicomp_bytes) / max(1, len(raw_bytes)))) * 100.0,
+        "savings_vs_raw_gzip_pct": (1 - (len(gzip_bytes) / max(1, len(raw_bytes)))) * 100.0,
+        "savings_vs_gzip_phicomp_pct": (1 - (len(phicomp_bytes) / max(1, len(gzip_bytes)))) * 100.0 if len(gzip_bytes) > 0 else None,
+        "sha256_raw": sha_raw,
+        "sha256_roundtrip": sha_round,
+        "roundtrip_ok": roundtrip_ok,
+        "duration_s": duration_s,
+        "generated_at_ms": now_ms,
+    }
+    # build zip
+    import io, json as _json, zipfile
+    bio = io.BytesIO()
+    with zipfile.ZipFile(bio, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr('raw.ndjson', raw_text)
+        zf.writestr('phicomp.bin', phicomp_bytes)
+        zf.writestr('gzip.bin', gzip_bytes)
+        zf.writestr('stats.json', _json.dumps(stats, indent=2))
+    bio.seek(0)
+    headers = {"Content-Disposition": f"attachment; filename=market_snapshot_{duration_s}s.zip"}
+    return Response(content=bio.read(), media_type='application/zip', headers=headers)
 
 # =================================================================================
 # VC DEMO 2: PROCEDURAL GRID GENERATOR (MODLO SEQUENCE)

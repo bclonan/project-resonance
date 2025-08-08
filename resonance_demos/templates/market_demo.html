@@ -7,13 +7,14 @@
     <!-- BUG FIX: Replace previous charting library with ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        .market-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem; }
+    .market-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem; }
         #chart-container { min-height: 450px; border: 1px solid #ecf0f1; border-radius: 5px; padding: 10px; }
         .metrics-container, .tape-container { background-color: #f8f9fa; padding: 1.5rem; border-radius: 5px; }
         .metric { margin-bottom: 1.5rem; }
         .metric-label { font-size: 0.9rem; color: #7f8c8d; display: block; }
         .metric-value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
         .metric-value.highlight { color: #2ecc71; }
+    .metric-sub { font-size: 0.85rem; color: #7f8c8d; margin-top: 0.25rem; display:block; }
         .tape-container { height: 250px; overflow-y: hidden; position: relative; }
         .trade-tape { position: absolute; width: 100%; }
         .trade { padding: 2px 5px; margin-bottom: 2px; font-family: "Courier New", monospace; font-size: 0.9rem; white-space: nowrap; }
@@ -37,10 +38,11 @@
                 <div id="chart-container"></div>
                 <div>
                     <div class="metrics-container">
-                        <div class="metric"><span class="metric-label">Bandwidth Savings (Cost Reduction)</span><span class="metric-value highlight" id="savings-value">0.00%</span></div>
-                        <div class="metric"><span class="metric-label">Raw Data Rate (Industry Standard)</span><span class="metric-value" id="raw-rate">0 KB/s</span></div>
-                        <div class="metric"><span class="metric-label">PhiComp Data Rate (Our Advantage)</span><span class="metric-value" id="phicomp-rate">0 KB/s</span></div>
-                        <div class="metric"><span class="metric-label">Latency Advantage (Alpha Generation)</span><span class="metric-value highlight" id="latency-advantage">0 µs</span></div>
+                        <div class="metric"><span class="metric-label">Bandwidth Savings vs Raw</span><span class="metric-value highlight" id="savings-value">0.00%</span></div>
+                        <div class="metric"><span class="metric-label">Raw Data Rate</span><span class="metric-value" id="raw-rate">0 KB/s</span></div>
+                        <div class="metric"><span class="metric-label">Gzip Data Rate</span><span class="metric-value" id="gzip-rate">0 KB/s</span><span class="metric-sub" id="savings-gzip">vs Raw: 0.00%</span></div>
+                        <div class="metric"><span class="metric-label">PhiComp Data Rate</span><span class="metric-value" id="phicomp-rate">0 KB/s</span><span class="metric-sub" id="savings-phicomp-gzip">vs Gzip: 0.00%</span></div>
+                        <div class="metric"><span class="metric-label">Latency Advantage (10GbE)</span><span class="metric-value highlight" id="latency-advantage">0 µs</span></div>
                     </div>
                     <div class="tape-container" style="margin-top: 2rem;">
                         <h3 style="margin-top:0;">Live BTC-USD Trade Tape</h3>
@@ -51,17 +53,48 @@
 
             <div class="explanation-box" style="margin-top: 2rem; border-left-color: #2ecc71;">
                 <h3>The Multi-Million Dollar Edge: What You Are Seeing</h3>
-                <p>In high-frequency trading (HFT), a microsecond (µs) advantage can be worth millions. This demo is not a simulation; it is processing a **live, unpredictable feed of real market trades** and benchmarking our performance against the raw data stream.</p>
+                <p>In high-frequency trading (HFT), a microsecond (µs) advantage can be worth millions. This demo is not a simulation; it is processing a <strong>live, unpredictable feed of real market trades</strong> and benchmarking our performance against the raw data stream.</p>
                 <ul>
-                    <li><strong>Bandwidth Savings (Direct Cost Reduction):</strong> Exchanges (NASDAQ, NYSE) and data providers (Bloomberg, Reuters) pay enormous costs to stream market data. The percentage shown above represents a direct, massive reduction in their infrastructure costs.</li>
-                    <li><strong>Latency Advantage (Direct Alpha Generation):</strong> For hedge funds and HFT firms, receiving data faster than competitors is the core of their business model. By compressing the data feed more efficiently, `phicomp` allows a trading algorithm to see market events microseconds earlier. This is a direct, revenue-generating competitive edge.</li>
+                    <li><strong>Bandwidth Savings (Direct Cost Reduction):</strong> Exchanges and data providers pay large costs to stream market data. The percentages vs Raw and vs Gzip are computed live from the wire payloads.</li>
+                    <li><strong>Latency Advantage (Direct Alpha Generation):</strong> Less data on the same link means earlier delivery. On 10GbE, saving X% bitrate reduces serialization delay by ~X% for the same window.</li>
                 </ul>
             </div>
+            <div class="explanation-box" style="margin-top: 1rem; border-left-color: #3498db;">
+                <h3>How to use this in your stack</h3>
+                <p>Drop-in patterns to realize savings immediately:</p>
+                <ul>
+                    <li><strong>Exchange edge gateway:</strong> Compress outbound trade/quote streams with <code>phicomp</code> and publish over WS/HTTP. Clients decompress with the same lib.</li>
+                    <li><strong>Cross-region replication:</strong> Compress message batches before Kafka/NATS hops to cut egress and shrink replication lag.</li>
+                    <li><strong>Retail aggregator:</strong> Serve many consumers by lowering per-connection bandwidth; same CPU can serve more clients.</li>
+                </ul>
+                <details>
+                    <summary>Sample: Python producer/consumer</summary>
+<pre><code class="language-python"># Producer (server-side)
+from phiresearch_compression import compress
+payload_bytes = json.dumps(msg).encode('utf-8')
+wire_bytes = compress(payload_bytes)  # send over WebSocket/HTTP
+
+# Consumer (client-side Python)
+from phiresearch_compression import decompress
+received = ws.recv()  # bytes
+msg_bytes = decompress(received)
+msg = json.loads(msg_bytes)
+</code></pre>
+                </details>
+            </div>
+
             <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:5px;">
-                <strong>Try it yourself:</strong>
-                <p style="margin:0.5rem 0 0.75rem 0;color:#7f8c8d;">Capture a 10s snapshot and download metrics for offline checks.</p>
-                <button id="btnRecord" class="button">Record 10s snapshot to CSV</button>
-                <span id="recordOut" style="margin-left:0.5rem;color:#7f8c8d;"></span>
+                <strong>Verify it yourself:</strong>
+                <ul style="margin:0.5rem 0 0.75rem 1rem; color:#7f8c8d;">
+                    <li>Record a 10s CSV with raw vs phicomp totals.</li>
+                    <li>Download a verifiable ZIP snapshot (raw.ndjson + phicomp.bin + gzip.bin + stats.json). Verify hashes and recompress locally.</li>
+                    <li>Compare vs gzip (or zstd offline) using your own tools. Results should match the live rates shown.</li>
+                </ul>
+                <div>
+                    <button id="btnRecord" class="button">Record 10s snapshot to CSV</button>
+                    <button id="btnZip" class="button" style="margin-left:0.5rem;">Download 10s ZIP snapshot</button>
+                    <span id="recordOut" style="margin-left:0.5rem;color:#7f8c8d;"></span>
+                </div>
             </div>
         </div>
     </div>
@@ -69,7 +102,10 @@
     <script>
         const savingsValue = document.getElementById('savings-value');
         const rawRate = document.getElementById('raw-rate');
-        const phicompRate = document.getElementById('phicomp-rate');
+    const phicompRate = document.getElementById('phicomp-rate');
+    const gzipRate = document.getElementById('gzip-rate');
+        const savingsGzip = document.getElementById('savings-gzip');
+        const savingsPhiVsGzip = document.getElementById('savings-phicomp-gzip');
         const latencyAdvantage = document.getElementById('latency-advantage');
         const tradeTape = document.getElementById('trade-tape');
 
@@ -88,7 +124,8 @@
         const ws = new WebSocket(`ws://${window.location.host}/ws/market_data`);
         let lastUpdateTime = Date.now();
         let lastRawTotal = 0;
-        let lastPhicompTotal = 0;
+    let lastPhicompTotal = 0;
+    let lastGzipTotal = 0;
 
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data);
@@ -112,13 +149,19 @@
             if (elapsedSeconds >= 1) {
                 const rawBps = (data.raw_bytes_total - lastRawTotal) / elapsedSeconds;
                 const phicompBps = (data.phicomp_bytes_total - lastPhicompTotal) / elapsedSeconds;
+                const gzipBps = (data.gzip_bytes_total - lastGzipTotal) / elapsedSeconds;
 
                 rawRate.textContent = `${(rawBps / 1024).toFixed(2)} KB/s`;
                 phicompRate.textContent = `${(phicompBps / 1024).toFixed(2)} KB/s`;
+                gzipRate.textContent = `${(gzipBps / 1024).toFixed(2)} KB/s`;
 
                 if (data.raw_bytes_total > 0) {
                     const savings = (1 - data.phicomp_bytes_total / data.raw_bytes_total) * 100;
                     savingsValue.textContent = `${savings.toFixed(2)}%`;
+                    const gzipSavings = (1 - data.gzip_bytes_total / data.raw_bytes_total) * 100;
+                    savingsGzip.textContent = `vs Raw: ${gzipSavings.toFixed(2)}%`;
+                    const phiVsGzip = (1 - (data.phicomp_bytes_total / Math.max(1, data.gzip_bytes_total))) * 100;
+                    savingsPhiVsGzip.textContent = `vs Gzip: ${phiVsGzip.toFixed(2)}%`;
 
                     const linkSpeed = 10 * 1e9; // 10 Gbit/s
                     const rawLatency = (rawBps * 8) / linkSpeed;
@@ -130,6 +173,7 @@
                 lastUpdateTime = now;
                 lastRawTotal = data.raw_bytes_total;
                 lastPhicompTotal = data.phicomp_bytes_total;
+                lastGzipTotal = data.gzip_bytes_total;
             }
         };
 
@@ -151,6 +195,21 @@
                     document.getElementById('recordOut').textContent = 'Saved market_snapshot.csv';
                 }
             }, 500);
+        });
+
+        document.getElementById('btnZip').addEventListener('click', async () => {
+            try {
+                const res = await fetch(`/api/market_snapshot?duration_s=10`);
+                if (!res.ok) throw new Error('snapshot failed');
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'market_snapshot_10s.zip';
+                a.click();
+                document.getElementById('recordOut').textContent = 'Saved market_snapshot_10s.zip';
+            } catch (e) {
+                document.getElementById('recordOut').textContent = 'Snapshot failed';
+            }
         });
     </script>
 </body>

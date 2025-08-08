@@ -204,6 +204,437 @@ solid phi_minor_rect
 endsolid
 ```
 
+**Fibonacci tiling** (1, 1, 2, 3) as stepped plates with proportional heights (0.1, 0.1, 0.2, 0.3) to suggest “evolving layers” and compression over time. It’s manifold enough for GitHub’s 3D viewer and small enough to keep the README snappy.
+
+```stl
+solid fibonacci_steps
+  // Square A: 1x1 at (0,0)–(1,1), height 0.1
+  facet normal 0 0 1
+    outer loop
+      vertex 0 0 0.1
+      vertex 1 0 0.1
+      vertex 1 1 0.1
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 0 0 0.1
+      vertex 1 1 0.1
+      vertex 0 1 0.1
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 0
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 1 0
+      vertex 1 0 0
+      vertex 0 0 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0
+      vertex 0 1 0.1
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0.1
+      vertex 0 0 0.1
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 0 0.1
+      vertex 1 1 0.1
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 1 0.1
+      vertex 1 1 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 0.1
+      vertex 1 0 0.1
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 0 0
+      vertex 1 0 0.1
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 0
+      vertex 1 1 0.1
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 0.1
+      vertex 0 1 0.1
+    endloop
+  endfacet
+
+  // Square B: 1x1 at (1,0)–(2,1), height 0.1
+  facet normal 0 0 1
+    outer loop
+      vertex 1 0 0.1
+      vertex 2 0 0.1
+      vertex 2 1 0.1
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 1 0 0.1
+      vertex 2 1 0.1
+      vertex 1 1 0.1
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 1 1 0
+      vertex 2 1 0
+      vertex 2 0 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 1 1 0
+      vertex 2 0 0
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 1 0
+      vertex 1 1 0.1
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 1 0.1
+      vertex 1 0 0.1
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 0 0
+      vertex 2 0 0.1
+      vertex 2 1 0.1
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 0 0
+      vertex 2 1 0.1
+      vertex 2 1 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 0 0.1
+      vertex 2 0 0.1
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 1 0 0
+      vertex 2 0 0.1
+      vertex 2 0 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 1 1 0
+      vertex 2 1 0
+      vertex 2 1 0.1
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 1 1 0
+      vertex 2 1 0.1
+      vertex 1 1 0.1
+    endloop
+  endfacet
+
+  // Square C: 2x2 at (0,1)–(2,3), height 0.2
+  facet normal 0 0 1
+    outer loop
+      vertex 0 1 0.2
+      vertex 2 1 0.2
+      vertex 2 3 0.2
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 0 1 0.2
+      vertex 2 3 0.2
+      vertex 0 3 0.2
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 3 0
+      vertex 2 3 0
+      vertex 2 1 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 3 0
+      vertex 2 1 0
+      vertex 0 1 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 1 0
+      vertex 0 3 0
+      vertex 0 3 0.2
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 1 0
+      vertex 0 3 0.2
+      vertex 0 1 0.2
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 1 0
+      vertex 2 1 0.2
+      vertex 2 3 0.2
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 1 0
+      vertex 2 3 0.2
+      vertex 2 3 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 1 0
+      vertex 0 1 0.2
+      vertex 2 1 0.2
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 1 0
+      vertex 2 1 0.2
+      vertex 2 1 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 3 0
+      vertex 2 3 0
+      vertex 2 3 0.2
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 3 0
+      vertex 2 3 0.2
+      vertex 0 3 0.2
+    endloop
+  endfacet
+
+  // Square D: 3x3 at (-3,0)–(0,3), height 0.3
+  facet normal 0 0 1
+    outer loop
+      vertex -3 0 0.3
+      vertex 0 0 0.3
+      vertex 0 3 0.3
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex -3 0 0.3
+      vertex 0 3 0.3
+      vertex -3 3 0.3
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -3 3 0
+      vertex 0 3 0
+      vertex 0 0 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -3 3 0
+      vertex 0 0 0
+      vertex -3 0 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -3 0 0
+      vertex -3 3 0
+      vertex -3 3 0.3
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -3 0 0
+      vertex -3 3 0.3
+      vertex -3 0 0.3
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 0.3
+      vertex 0 3 0.3
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 3 0.3
+      vertex 0 3 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -3 0 0
+      vertex -3 0 0.3
+      vertex 0 0 0.3
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -3 0 0
+      vertex 0 0 0.3
+      vertex 0 0 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -3 3 0
+      vertex 0 3 0
+      vertex 0 3 0.3
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -3 3 0
+      vertex 0 3 0.3
+      vertex -3 3 0.3
+    endloop
+  endfacet
+endsolid
+```
+
+### Optional caption for the README
+
+> *Fibonacci Tiling (1,1,2,3) as rising plates. Heights encode step weights, hinting at our evolving, layered compression: short cycles → stable bases → larger aggregates. The geometry mirrors our grid → RGBD memory → regeneration pipeline.*
+
+**twisted triangular prism** (“Pisano Twist”) where the top is rotated **60°** relative to the base to echo the 60-step Pisano-cycle vibe. It reads visually as a low-poly helix—clean, tiny, and manifold for GitHub’s 3D viewer.
+
+```stl
+solid pisano_twist
+  // Bottom triangle (z=0)
+  facet normal 0 0 -1
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex -0.5 0.8660254 0.0
+      vertex -0.5 -0.8660254 0.0
+    endloop
+  endfacet
+
+  // Top triangle (z=1) rotated +60°
+  facet normal 0 0 1
+    outer loop
+      vertex 0.5 0.8660254 1.0
+      vertex -1.0 0.0 1.0
+      vertex 0.5 -0.8660254 1.0
+    endloop
+  endfacet
+
+  // Side 1 (between edge B1->B2 and T1->T2)
+  facet normal 0.4082483 0.7071067 0.5773503
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex -0.5 0.8660254 0.0
+      vertex -1.0 0.0 1.0
+    endloop
+  endfacet
+  facet normal 0.8164966 -0.0 0.5773503
+    outer loop
+      vertex 1.0 0.0 0.0
+      vertex -1.0 0.0 1.0
+      vertex 0.5 0.8660254 1.0
+    endloop
+  endfacet
+
+  // Side 2 (between edge B2->B3 and T2->T3)
+  facet normal -0.4082483 0.7071067 0.5773503
+    outer loop
+      vertex -0.5 0.8660254 0.0
+      vertex -0.5 -0.8660254 0.0
+      vertex 0.5 -0.8660254 1.0
+    endloop
+  endfacet
+  facet normal -0.8164966 0.0 0.5773503
+    outer loop
+      vertex -0.5 0.8660254 0.0
+      vertex 0.5 -0.8660254 1.0
+      vertex -1.0 0.0 1.0
+    endloop
+  endfacet
+
+  // Side 3 (between edge B3->B1 and T3->T1)
+  facet normal 0.0 -0.8164966 0.5773503
+    outer loop
+      vertex -0.5 -0.8660254 0.0
+      vertex 1.0 0.0 0.0
+      vertex 0.5 0.8660254 1.0
+    endloop
+  endfacet
+  facet normal 0.4082483 -0.7071067 0.5773503
+    outer loop
+      vertex -0.5 -0.8660254 0.0
+      vertex 0.5 0.8660254 1.0
+      vertex 0.5 -0.8660254 1.0
+    endloop
+  endfacet
+endsolid
+```
+
+### Tiny caption (optional)
+
+> *Pisano Twist (Δθ = 60°): a compact “helix” evoking the 60-step Pisano cycle. Use alongside the Fibonacci steps model to show layers (steps) + cycle (twist)—aka your evolving compression story.*
+
+
 ## Getting Started: Installation & Verification
 
 You can compile the C++ core and run the verification benchmarks.
