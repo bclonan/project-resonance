@@ -1,9 +1,41 @@
 #!/usr/bin/env python3
+import os, shutil, glob
 import subprocess
 import re
 import time
 import sys
 import os
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Directories to remove entirely if present
+NUKE_DIRS = [
+    "build",
+    "dist",
+    "project_resonance.egg-info",
+    ".pytest_cache",
+]
+
+# Globs relative to ROOT
+GLOBS = [
+    "**/__pycache__",
+    "build/lib.*",
+    "build/temp.*",
+    "**/*.pyd",
+    "**/*.so",
+    "**/*.dll",
+]
+
+def rm_dir(path):
+    if os.path.isdir(path):
+        print(f"Removing dir: {path}")
+        shutil.rmtree(path, ignore_errors=True)
+
+def rm_file(path):
+    if os.path.isfile(path):
+        print(f"Removing file: {path}")
+        os.remove(path)
+
 
 def run_command(command, cwd=None):
     """Runs a command and handles errors, with correct encoding."""
@@ -62,6 +94,8 @@ def run_test_for_stack(stack_name, benchmark_dir):
     return parse_k6_output(k6_output)
 
 def main():
+
+    
     print("Starting System-Level Resonance Benchmark...")
     print("This will build and run containerized environments. It may take a few minutes.")
     

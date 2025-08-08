@@ -1,0 +1,3 @@
+When performing normalization on the probability distribution, ensure that the sum of probabilities is strictly positive. If any probability is zero or negative, replace it with a small positive value (e.g., 1e-12) to avoid issues during encoding and decoding. After applying the tiny floor, renormalize the distribution so that it sums to one.
+
+When performing a pull request, clearly describe the changes made and their purpose. Include relevant context, such as the problem being solved or the feature being implemented. This will help reviewers understand the motivation behind the changes and facilitate a smoother review process.

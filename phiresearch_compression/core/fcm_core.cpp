@@ -110,8 +110,13 @@ namespace phicomp
             return ((*input_buffer_ptr)[byte_pos] >> bit_pos_in_byte) & 1;
         }
 
+        static RGBDState g_rgbd_state; // single process-local state (stateless compression would isolate)
+
         std::vector<Symbol> ArithmeticCoder::encode(const std::vector<Symbol> &data)
         {
+            // Ensure RGBD state starts clean for each independent encoding so that
+            // decode reproduces identical probability sequence.
+            g_rgbd_state = RGBDState();
             static const uint64_t TOP_VALUE = ~0ULL;
             static const uint64_t HALF = 1ULL << 63;
             static const uint64_t FIRST_QUARTER = 1ULL << 62;
@@ -123,13 +128,85 @@ namespace phicomp
             FibonacciContextModel model;
             for (Symbol symbol : data)
             {
-                uint64_t range = high - low + 1;
+                // Build integer cumulative frequencies for stable mapping
                 std::vector<double> probabilities = model.get_probabilities();
-                double cum_prob_low = 0.0;
-                for (int i = 0; i < symbol; ++i)
-                    cum_prob_low += probabilities[i];
-                high = low + static_cast<uint64_t>(range * (cum_prob_low + probabilities[symbol])) - 1;
-                low = low + static_cast<uint64_t>(range * cum_prob_low);
+                g_rgbd_state.apply_bias(probabilities);
+                // Floor tiny/negative and renormalize
+                double sum_prob = 0.0;
+                for (double &p : probabilities)
+                {
+                    if (p <= 0.0)
+                        p = 1e-12;
+                    sum_prob += p;
+                }
+                if (sum_prob <= 0.0)
+                {
+                    for (double &p : probabilities)
+                        p = 1.0 / 256.0;
+                }
+                else
+                {
+                    for (double &p : probabilities)
+                        p /= sum_prob;
+                }
+                const uint32_t TOTAL_FREQ = 1u << 16; // 65536
+                std::array<uint32_t, 256> freq{};
+                std::array<double, 256> frac{};
+                uint64_t sum_f = 0;
+                for (size_t i = 0; i < 256; ++i)
+                {
+                    double raw = probabilities[i] * (double)TOTAL_FREQ;
+                    uint32_t base = (uint32_t)std::floor(raw);
+                    if (base < 1)
+                        base = 1;
+                    freq[i] = base;
+                    frac[i] = raw - std::floor(raw);
+                    sum_f += base;
+                }
+                // Adjust to match TOTAL_FREQ
+                if (sum_f < TOTAL_FREQ)
+                {
+                    uint32_t rem = TOTAL_FREQ - (uint32_t)sum_f;
+                    // Distribute to largest fractional parts
+                    std::array<size_t, 256> idx{};
+                    for (size_t i = 0; i < 256; ++i)
+                        idx[i] = i;
+                    std::stable_sort(idx.begin(), idx.end(), [&](size_t a, size_t b)
+                                     { return frac[a] > frac[b]; });
+                    for (uint32_t k = 0; k < rem; ++k)
+                        freq[idx[k % 256]]++;
+                }
+                else if (sum_f > TOTAL_FREQ)
+                {
+                    uint32_t over = (uint32_t)sum_f - TOTAL_FREQ;
+                    // Remove from smallest fractional parts but keep >=1
+                    std::array<size_t, 256> idx{};
+                    for (size_t i = 0; i < 256; ++i)
+                        idx[i] = i;
+                    std::stable_sort(idx.begin(), idx.end(), [&](size_t a, size_t b)
+                                     { return frac[a] < frac[b]; });
+                    size_t k = 0;
+                    while (over > 0)
+                    {
+                        size_t id = idx[k % 256];
+                        if (freq[id] > 1)
+                        {
+                            freq[id]--;
+                            --over;
+                        }
+                        ++k;
+                    }
+                }
+                std::array<uint32_t, 257> cum{};
+                cum[0] = 0;
+                for (size_t i = 0; i < 256; ++i)
+                    cum[i + 1] = cum[i] + freq[i];
+                // Map symbol into range using integer cumulative frequencies
+                uint64_t range = high - low + 1;
+                uint64_t low_off = (uint64_t)((long double)range * (long double)cum[symbol] / (long double)TOTAL_FREQ);
+                uint64_t high_off = (uint64_t)((long double)range * (long double)cum[symbol + 1] / (long double)TOTAL_FREQ);
+                low = low + low_off;
+                high = low + high_off - low_off - 1;
                 while (true)
                 {
                     if (high < HALF)
@@ -167,6 +244,8 @@ namespace phicomp
                     high |= 1;
                 }
                 model.update(symbol);
+                // Update RGBD state after processing symbol so next prediction uses new context.
+                g_rgbd_state.update(symbol);
             }
             flush_encoder();
             std::vector<Symbol> byte_output;
@@ -189,6 +268,8 @@ namespace phicomp
         {
             if (original_size == 0)
                 return {};
+            // Reset RGBD state so probability evolution mirrors encoding run.
+            g_rgbd_state = RGBDState();
             static const uint64_t TOP_VALUE = ~0ULL;
             static const uint64_t HALF = 1ULL << 63;
             static const uint64_t FIRST_QUARTER = 1ULL << 62;
@@ -205,27 +286,96 @@ namespace phicomp
             output_data.reserve(original_size);
             for (size_t i = 0; i < original_size; ++i)
             {
-                uint64_t range = high - low + 1;
+                // Build integer cumulative frequencies matching encoder
                 std::vector<double> probabilities = model.get_probabilities();
-                uint64_t total_freq = 1ULL << 32;
-                uint64_t scaled_value = ((code_value - low + 1) * total_freq - 1) / range;
-                double cum_prob = 0.0;
+                g_rgbd_state.apply_bias(probabilities);
+                double sum_prob_d = 0.0;
+                for (double &p : probabilities)
+                {
+                    if (p <= 0.0)
+                        p = 1e-12;
+                    sum_prob_d += p;
+                }
+                if (sum_prob_d <= 0.0)
+                {
+                    for (double &p : probabilities)
+                        p = 1.0 / 256.0;
+                }
+                else
+                {
+                    for (double &p : probabilities)
+                        p /= sum_prob_d;
+                }
+                const uint32_t TOTAL_FREQ = 1u << 16;
+                std::array<uint32_t, 256> freq{};
+                std::array<double, 256> frac{};
+                uint64_t sum_f = 0;
+                for (size_t j = 0; j < 256; ++j)
+                {
+                    double raw = probabilities[j] * (double)TOTAL_FREQ;
+                    uint32_t base = (uint32_t)std::floor(raw);
+                    if (base < 1)
+                        base = 1;
+                    freq[j] = base;
+                    frac[j] = raw - std::floor(raw);
+                    sum_f += base;
+                }
+                if (sum_f < TOTAL_FREQ)
+                {
+                    uint32_t rem = TOTAL_FREQ - (uint32_t)sum_f;
+                    std::array<size_t, 256> idx{};
+                    for (size_t j = 0; j < 256; ++j)
+                        idx[j] = j;
+                    std::stable_sort(idx.begin(), idx.end(), [&](size_t a, size_t b)
+                                     { return frac[a] > frac[b]; });
+                    for (uint32_t k = 0; k < rem; ++k)
+                        freq[idx[k % 256]]++;
+                }
+                else if (sum_f > TOTAL_FREQ)
+                {
+                    uint32_t over = (uint32_t)sum_f - TOTAL_FREQ;
+                    std::array<size_t, 256> idx{};
+                    for (size_t j = 0; j < 256; ++j)
+                        idx[j] = j;
+                    std::stable_sort(idx.begin(), idx.end(), [&](size_t a, size_t b)
+                                     { return frac[a] < frac[b]; });
+                    size_t k = 0;
+                    while (over > 0)
+                    {
+                        size_t id = idx[k % 256];
+                        if (freq[id] > 1)
+                        {
+                            freq[id]--;
+                            --over;
+                        }
+                        ++k;
+                    }
+                }
+                std::array<uint32_t, 257> cum{};
+                cum[0] = 0;
+                for (size_t j = 0; j < 256; ++j)
+                    cum[j + 1] = cum[j] + freq[j];
+                // Determine symbol using integer scaled value
+                uint64_t range = high - low + 1;
+                long double sv = ((((long double)code_value - (long double)low) + 1.0L) * (long double)TOTAL_FREQ - 1.0L) / (long double)range;
+                uint32_t scaled = (uint32_t)std::floor(std::max<long double>(0.0L, sv));
+                if (scaled >= TOTAL_FREQ)
+                    scaled = TOTAL_FREQ - 1;
                 Symbol decoded_symbol = 255;
                 for (size_t s = 0; s < 256; ++s)
                 {
-                    cum_prob += probabilities[s];
-                    if (scaled_value < static_cast<uint64_t>(cum_prob * total_freq))
+                    if (scaled < cum[s + 1])
                     {
                         decoded_symbol = static_cast<Symbol>(s);
                         break;
                     }
                 }
                 output_data.push_back(decoded_symbol);
-                double cum_prob_low = 0.0;
-                for (int k = 0; k < decoded_symbol; ++k)
-                    cum_prob_low += probabilities[k];
-                high = low + static_cast<uint64_t>(range * (cum_prob_low + probabilities[decoded_symbol])) - 1;
-                low = low + static_cast<uint64_t>(range * cum_prob_low);
+                // Update range with integer cumulative frequencies
+                uint64_t low_off = (uint64_t)((long double)range * (long double)cum[decoded_symbol] / (long double)TOTAL_FREQ);
+                uint64_t high_off = (uint64_t)((long double)range * (long double)cum[decoded_symbol + 1] / (long double)TOTAL_FREQ);
+                low = low + low_off;
+                high = low + high_off - low_off - 1;
                 while (true)
                 {
                     if (high < HALF)
@@ -254,6 +404,7 @@ namespace phicomp
                     code_value |= read_bit();
                 }
                 model.update(decoded_symbol);
+                g_rgbd_state.update(decoded_symbol);
             }
             return output_data;
         }
@@ -285,6 +436,14 @@ namespace phicomp
 PYBIND11_MODULE(core_bindings, m)
 {
     m.doc() = "Production-grade C++ core for PhiComp compression";
+
+    m.def("set_rgbd_options", [](bool use_rgbd, double weight)
+          {
+              phicomp::core::GlobalOptions::instance().use_rgbd = use_rgbd;
+              if (weight > 0.0) phicomp::core::GlobalOptions::instance().rgbd_phi_weight = weight; }, pybind11::arg("use_rgbd"), pybind11::arg("weight") = 0.0, "Configure experimental RGBD bias integration (use cautiously; non-deterministic if state reused).");
+
+    m.def("reset_rgbd_state", []()
+          { phicomp::core::g_rgbd_state = phicomp::core::RGBDState(); }, "Reset internal RGBD lattice state (call before independent compression tasks).");
 
     m.def("compress_main", [](const pybind11::bytes &data_bytes)
           {
@@ -318,5 +477,5 @@ PYBIND11_MODULE(core_bindings, m)
         auto decompressed_vec = phicomp::core::decompress_internal(compressed_body, original_size);
         
         std::string decompressed_str(decompressed_vec.begin(), decompressed_vec.end());
-        return pybind11::bytes(decompressed_str); }, "Decompresses data compressed with PhiComp");
+    return pybind11::bytes(decompressed_str); }, "Decompresses data compressed with PhiComp");
 }

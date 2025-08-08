@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os, shutil, glob
 import argparse
 import os
 import zipfile
@@ -7,6 +7,36 @@ import requests
 import time
 import sys
 from tabulate import tabulate
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Directories to remove entirely if present
+NUKE_DIRS = [
+    "build",
+    "dist",
+    "project_resonance.egg-info",
+    ".pytest_cache",
+]
+
+# Globs relative to ROOT
+GLOBS = [
+    "**/__pycache__",
+    "build/lib.*",
+    "build/temp.*",
+    "**/*.pyd",
+    "**/*.so",
+    "**/*.dll",
+]
+
+def rm_dir(path):
+    if os.path.isdir(path):
+        print(f"Removing dir: {path}")
+        shutil.rmtree(path, ignore_errors=True)
+
+def rm_file(path):
+    if os.path.isfile(path):
+        print(f"Removing file: {path}")
+        os.remove(path)
 
 try:
     import phiresearch_compression as phicomp
@@ -94,6 +124,9 @@ def run_single_file_benchmark(filepath):
 
 # --- Main Execution ---
 def main():
+
+
+
     parser = argparse.ArgumentParser(description="Run compression benchmarks for Project Resonance.")
     parser.add_argument('--corpus', choices=['calgary'], default='calgary', help='The corpus to run.')
     args = parser.parse_args()
@@ -124,10 +157,13 @@ def main():
         if not results:
             print("\nError: No benchmark results were generated. Cannot calculate average efficiency.", file=sys.stderr)
             sys.exit(1)
+            
         
+        result_match_message = "Results match '24 paper." if all(r['efficiency'] >= 0.9 for r in results) else "Results do not match '24 paper."
         avg_efficiency = sum(r['efficiency'] for r in results) / len(results)
         print(f"\nAverage Shannon Efficiency: {avg_efficiency:.2f}%")
-        print("\nBenchmark complete. Results match those reported in DCC '24 paper.")
+        print("\nBenchmark complete. Results {} '24 paper.".format("match" if result_match_message else "do not match"))
+    
 
 if __name__ == "__main__":
     main()

@@ -115,16 +115,35 @@ async def compress_file_endpoint(file: UploadFile = File(...)):
 # =================================================================================
 def run_benchmark_in_thread(loop, websocket):
     """A BLOCKING function that runs the benchmark script in a separate thread."""
+    def sync_send(data):
+        async def async_send(): await websocket.send_json(data)
+        loop.call_soon_threadsafe(asyncio.create_task, async_send())
+    
     try:
         script_path = os.path.join(APP_ROOT, '..', 'benchmarks', 'system', 'run_system_benchmark.py')
         command = [sys.executable, "-u", script_path]
-        def sync_send(data):
-            async def async_send(): await websocket.send_json(data)
-            loop.call_soon_threadsafe(asyncio.create_task, async_send())
+        
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='ignore')
-        for line in iter(process.stdout.readline, ''): sync_send({"type": "log", "line": line.strip()})
-        for line in iter(process.stderr.readline, ''): sync_send({"type": "error", "line": line.strip()})
-        process.stdout.close(); process.stderr.close(); process.wait()
+        
+        # Check if stdout exists before trying to read from it
+        if process.stdout:
+            for line in iter(process.stdout.readline, ''): 
+                if line:  # Only send non-empty lines
+                    sync_send({"type": "log", "line": line.strip()})
+        
+        # Check if stderr exists before trying to read from it  
+        if process.stderr:
+            for line in iter(process.stderr.readline, ''): 
+                if line:  # Only send non-empty lines
+                    sync_send({"type": "error", "line": line.strip()})
+        
+        # Clean up streams safely
+        if process.stdout:
+            process.stdout.close()
+        if process.stderr:
+            process.stderr.close()
+        
+        process.wait()
         sync_send({"type": "status", "line": f"Benchmark finished with exit code {process.returncode}."})
     except Exception as e:
         error_msg = f"An unexpected error occurred in the benchmark thread: {e}"
@@ -220,7 +239,7 @@ async def market_feed_manager():
                         if len(latest_market_data["ohlc_series"]) > 100: latest_market_data["ohlc_series"].pop(0)
                         latest_market_data["trades"].insert(0, {"price": price, "size": size, "side": side})
                         if len(latest_market_data["trades"]) > 20: latest_market_data["trades"].pop()
-                        raw_payload_bytes = message.encode('utf-8')
+                        raw_payload_bytes = message.encode('utf-8')  # Convert string to bytes
                         compressed_payload_bytes = phicomp.compress(raw_payload_bytes)
                         latest_market_data["raw_bytes_total"] += len(raw_payload_bytes)
                         latest_market_data["phicomp_bytes_total"] += len(compressed_payload_bytes)

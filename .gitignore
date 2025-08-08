@@ -1,0 +1,18 @@
+# Build artifacts
+/build/
+/dist/
+/*.egg-info/
+/project_resonance.egg-info/
+
+# C-extension build outputs
+/build/lib.*
+/build/temp.*
+
+# Python caches
+__pycache__/
+.pytest_cache/
+
+# Platform-specific
+*.pyd
+*.so
+*.dll

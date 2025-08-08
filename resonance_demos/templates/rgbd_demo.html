@@ -1,0 +1,24 @@
+{% extends 'index.html' %} {% block content %}
+<h2>RGBD Bias Demo (Experimental)</h2>
+<p>
+  This demo explains the experimental RGBD lattice biasing integrated into the
+  PhiComp codec.
+</p>
+<p>
+  The lattice uses a 10x10 Fibonacci-modulo spatial addressing with a 60-frame
+  temporal ring. Each cell tracks the last symbol and a visit count. When
+  enabled, the codec adds a small adaptive prior boost to the last symbol
+  observed at the predicted (x,y,t) coordinate for the next byte.
+</p>
+<pre><code>from phiresearch_compression import core_bindings as cb, compressor
+cb.reset_rgbd_state()
+cb.set_rgbd_options(True, 0.2)
+compressed = compressor.compress(b"Example payload...")
+cb.reset_rgbd_state()
+decompressed = compressor.decompress(compressed)
+</code></pre>
+<p>
+  Use with care; for reproducible benchmarks reset state before each independent
+  compression.
+</p>
+{% endblock %}

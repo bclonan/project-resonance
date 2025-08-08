@@ -1,0 +1,11 @@
+You are contributing to a Fibonacci-grid-based compression engine using C++ and pybind11.
+
+Goals:
+- Implement RGBD tensor smoothing into frequency modeling
+- Use grid position (x=F(n)%10, y=F(n+1)%10, t=n%60) to write and read memory
+- Apply φ-blended bias toward the last seen symbol
+- Output a Markdown report of compression quality
+
+Code is in: phiresearch_compression/
+Entry point: Codec::encode_bytes(), decode_bytes()
+Python bindings in: bindings/
