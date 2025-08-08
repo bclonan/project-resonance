@@ -6,6 +6,7 @@ import zipfile
 import requests
 import time
 import sys
+import shutil
 from tabulate import tabulate
 
 try:
@@ -64,7 +65,6 @@ def download_corpus():
     except Exception as e:
         print(f"An error occurred during download/extraction: {e}", file=sys.stderr)
         if os.path.exists(corpus_path):
-            import shutil
             shutil.rmtree(corpus_path)
         sys.exit(1)
 

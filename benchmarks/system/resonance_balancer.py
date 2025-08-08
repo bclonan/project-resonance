@@ -8,7 +8,15 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from phiresearch_systems import PhiBalancer
 
-BACKEND_HOSTS = os.getenv("BACKEND_HOSTS", "localhost:8001").split(',')
+# Validate and parse backend hosts from environment
+backend_hosts_env = os.getenv("BACKEND_HOSTS", "localhost:8001")
+if not backend_hosts_env.strip():
+    raise ValueError("BACKEND_HOSTS environment variable cannot be empty")
+
+BACKEND_HOSTS = [host.strip() for host in backend_hosts_env.split(',') if host.strip()]
+if not BACKEND_HOSTS:
+    raise ValueError("No valid backend hosts found in BACKEND_HOSTS environment variable")
+
 BALANCER = PhiBalancer([f"http://{host}" for host in BACKEND_HOSTS])
 
 class ResonanceProxy(BaseHTTPRequestHandler):

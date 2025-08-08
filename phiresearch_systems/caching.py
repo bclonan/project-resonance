@@ -1,4 +1,4 @@
-# phiresearch_systems/caching.py
+from typing import Optional
 from collections import OrderedDict
 import math
 
@@ -10,6 +10,8 @@ class PhiCache:
     to be evicted than older, less important items.
     """
     def __init__(self, capacity: int = 256):
+        if not isinstance(capacity, int):
+            raise TypeError("Cache capacity must be an integer.")
         if capacity <= 0:
             raise ValueError("Cache capacity must be positive.")
         self.cache = OrderedDict()
@@ -25,11 +27,14 @@ class PhiCache:
         index = min(access_count, len(self.fib_weights) - 1)
         return self.fib_weights[index]
 
-    def get(self, key: str) -> str | None:
+    def get(self, key: str) -> Optional[str]:
         """
         Retrieves an item from the cache. If found, its access count is
         incremented, and it's moved to the end (most recently used).
         """
+        if not isinstance(key, str):
+            raise TypeError("Cache key must be a string.")
+        
         if key not in self.cache:
             return None
         
@@ -44,6 +49,11 @@ class PhiCache:
         Adds an item to the cache. If the cache is full, it evicts the
         item with the lowest score (a combination of recency and weight).
         """
+        if not isinstance(key, str):
+            raise TypeError("Cache key must be a string.")
+        if not isinstance(value, str):
+            raise TypeError("Cache value must be a string.")
+        
         if key in self.cache:
             # Update existing key
             _, access_count = self.cache[key]
@@ -60,11 +70,16 @@ class PhiCache:
         Evicts the least valuable item. The value is determined by its
         Fibonacci weight divided by its age (position in the LRU order).
         This prioritizes keeping high-weight items even if they are old.
+        
+        Optimized version that finds the minimum in a single pass.
         """
+        if not self.cache:
+            return
+            
         lowest_score = float('inf')
         key_to_evict = None
         
-        # Iterate through items from oldest to newest
+        # Single pass through items from oldest to newest
         for i, (key, (value, access_count)) in enumerate(self.cache.items()):
             weight = self._get_weight(access_count)
             # Score = weight / age (older items have smaller i)

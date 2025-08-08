@@ -3,7 +3,15 @@ from typing import Union
 
 # This imports the *real*, compiled C++ extension.
 # The 'core_bindings.so' (or .pyd) file is created when you run 'pip install .'.
-from . import core_bindings
+try:
+    from . import core_bindings
+except ImportError as e:
+    # Better error message for missing C++ extension
+    raise ImportError(
+        "Could not import core_bindings. This usually means the C++ extension "
+        "was not compiled successfully. Please ensure you have a C++17 compiler "
+        "and run 'pip install .' from the project root."
+    ) from e
 
 def compress(data: Union[bytes, bytearray]) -> bytes:
     """
