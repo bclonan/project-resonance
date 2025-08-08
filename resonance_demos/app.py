@@ -469,6 +469,14 @@ async def show_research(request: Request):
 async def show_architecture(request: Request):
     return templates.TemplateResponse("architecture.html", {"request": request})
 
+@app.get("/demo/snapshot", response_class=HTMLResponse)
+async def show_snapshot(request: Request):
+    return templates.TemplateResponse("snapshot_demo.html", {"request": request})
+
+@app.get("/demo/rgbd", response_class=HTMLResponse)
+async def show_rgbd(request: Request):
+    return templates.TemplateResponse("rgbd_demo.html", {"request": request})
+
 # =================================================================================
 # Local Development Runner
 # =================================================================================

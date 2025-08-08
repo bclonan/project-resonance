@@ -1,24 +1,46 @@
-{% extends 'index.html' %} {% block content %}
-<h2>RGBD Bias Demo (Experimental)</h2>
-<p>
-  This demo explains the experimental RGBD lattice biasing integrated into the
-  PhiComp codec.
-</p>
-<p>
-  The lattice uses a 10x10 Fibonacci-modulo spatial addressing with a 60-frame
-  temporal ring. Each cell tracks the last symbol and a visit count. When
-  enabled, the codec adds a small adaptive prior boost to the last symbol
-  observed at the predicted (x,y,t) coordinate for the next byte.
-</p>
-<pre><code>from phiresearch_compression import core_bindings as cb, compressor
-cb.reset_rgbd_state()
-cb.set_rgbd_options(True, 0.2)
-compressed = compressor.compress(b"Example payload...")
-cb.reset_rgbd_state()
-decompressed = compressor.decompress(compressed)
-</code></pre>
-<p>
-  Use with care; for reproducible benchmarks reset state before each independent
-  compression.
-</p>
+{% extends 'index.html' %}
+{% block content %}
+<div class="demo-container">
+  <div class="demo-header">
+    <div>
+      <h2>RGBD Bias Test</h2>
+      <p>Toggle the experimental RGBD lattice bias and verify roundtrip equality and size differences.</p>
+    </div>
+    <a href="/" class="back-link">← Back to Demos</a>
+  </div>
+  <div class="box" style="background:#f8f9fa; padding:1rem; border-radius:6px; margin-top:1rem;">
+    <div class="row">
+      <label>Text payload:</label>
+      <textarea id="txt" style="width:100%; min-height:140px;">Example payload...
+The quick brown fox jumps over the lazy dog.
+0123456789
+</textarea>
+    </div>
+    <div class="row" style="margin: 0.75rem 0;">
+      <label><input type="checkbox" id="rgbd" /> Enable RGBD bias</label>
+      <label style="margin-left:1rem;">Weight:
+        <input id="w" type="number" value="0.2" min="0" max="1" step="0.05" />
+      </label>
+      <button id="go" class="button" style="margin-left:1rem;">Test</button>
+      <span id="out" style="margin-left:0.5rem;color:#7f8c8d;"></span>
+    </div>
+  </div>
+</div>
+<script>
+  (function(){
+    const go = document.getElementById('go');
+    if (!go) return;
+    go.addEventListener('click', async () => {
+      const body = {
+        text: document.getElementById('txt').value,
+        use_rgbd: document.getElementById('rgbd').checked,
+        weight: parseFloat(document.getElementById('w').value || '0.2'),
+      };
+      const res = await fetch('/api/rgbd_test', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+      const j = await res.json();
+      if (j.error) { document.getElementById('out').textContent = j.error; return; }
+      document.getElementById('out').textContent = `original=${j.original} compressed=${j.compressed} roundtrip_ok=${j.roundtrip_ok}`;
+    });
+  })();
+</script>
 {% endblock %}
