@@ -630,6 +630,448 @@ solid pisano_twist
 endsolid
 ```
 
+the **third** micro-model: a **Fibonacci spiral ramp** (1, 1, 2, 3, 5). It extends the tiling to the 5×5 square and uses increasing Z heights to suggest “growth → aggregation → regeneration.” Drop this under the other two in your README.
+
+```stl
+solid golden_spiral_ramp
+  // S1: 1x1 at (0,0)-(1,1), height 0.12
+  facet normal 0 0 1
+    outer loop
+      vertex 0 0 0.12
+      vertex 1 0 0.12
+      vertex 1 1 0.12
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 0 0 0.12
+      vertex 1 1 0.12
+      vertex 0 1 0.12
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 0
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 1 0
+      vertex 1 0 0
+      vertex 0 0 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0
+      vertex 0 1 0.12
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0.12
+      vertex 0 0 0.12
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 0 0.12
+      vertex 1 1 0.12
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 1 0.12
+      vertex 1 1 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 0.12
+      vertex 1 0 0.12
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 0 0
+      vertex 1 0 0.12
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 0
+      vertex 1 1 0.12
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 1 0
+      vertex 1 1 0.12
+      vertex 0 1 0.12
+    endloop
+  endfacet
+
+  // S2: 1x1 at (1,0)-(2,1), height 0.15
+  facet normal 0 0 1
+    outer loop
+      vertex 1 0 0.15
+      vertex 2 0 0.15
+      vertex 2 1 0.15
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 1 0 0.15
+      vertex 2 1 0.15
+      vertex 1 1 0.15
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 1 1 0
+      vertex 2 1 0
+      vertex 2 0 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 1 1 0
+      vertex 2 0 0
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 1 0
+      vertex 1 1 0.15
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 1 0.15
+      vertex 1 0 0.15
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 0 0
+      vertex 2 0 0.15
+      vertex 2 1 0.15
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 0 0
+      vertex 2 1 0.15
+      vertex 2 1 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 1 0 0
+      vertex 1 0 0.15
+      vertex 2 0 0.15
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 1 0 0
+      vertex 2 0 0.15
+      vertex 2 0 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 1 1 0
+      vertex 2 1 0
+      vertex 2 1 0.15
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 1 1 0
+      vertex 2 1 0.15
+      vertex 1 1 0.15
+    endloop
+  endfacet
+
+  // S3: 2x2 at (0,1)-(2,3), height 0.20
+  facet normal 0 0 1
+    outer loop
+      vertex 0 1 0.20
+      vertex 2 1 0.20
+      vertex 2 3 0.20
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 0 1 0.20
+      vertex 2 3 0.20
+      vertex 0 3 0.20
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 3 0
+      vertex 2 3 0
+      vertex 2 1 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 0 3 0
+      vertex 2 1 0
+      vertex 0 1 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 1 0
+      vertex 0 3 0
+      vertex 0 3 0.20
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 0 1 0
+      vertex 0 3 0.20
+      vertex 0 1 0.20
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 1 0
+      vertex 2 1 0.20
+      vertex 2 3 0.20
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 1 0
+      vertex 2 3 0.20
+      vertex 2 3 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 1 0
+      vertex 0 1 0.20
+      vertex 2 1 0.20
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 0 1 0
+      vertex 2 1 0.20
+      vertex 2 1 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 3 0
+      vertex 2 3 0
+      vertex 2 3 0.20
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 0 3 0
+      vertex 2 3 0.20
+      vertex 0 3 0.20
+    endloop
+  endfacet
+
+  // S4: 3x3 at (-3,0)-(0,3), height 0.26
+  facet normal 0 0 1
+    outer loop
+      vertex -3 0 0.26
+      vertex 0 0 0.26
+      vertex 0 3 0.26
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex -3 0 0.26
+      vertex 0 3 0.26
+      vertex -3 3 0.26
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -3 3 0
+      vertex 0 3 0
+      vertex 0 0 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -3 3 0
+      vertex 0 0 0
+      vertex -3 0 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -3 0 0
+      vertex -3 3 0
+      vertex -3 3 0.26
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -3 0 0
+      vertex -3 3 0.26
+      vertex -3 0 0.26
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 0.26
+      vertex 0 3 0.26
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 3 0.26
+      vertex 0 3 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -3 0 0
+      vertex -3 0 0.26
+      vertex 0 0 0.26
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -3 0 0
+      vertex 0 0 0.26
+      vertex 0 0 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -3 3 0
+      vertex 0 3 0
+      vertex 0 3 0.26
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -3 3 0
+      vertex 0 3 0.26
+      vertex -3 3 0.26
+    endloop
+  endfacet
+
+  // S5: 5x5 at (-3,-5)-(2,0), height 0.34
+  facet normal 0 0 1
+    outer loop
+      vertex -3 -5 0.34
+      vertex 2 -5 0.34
+      vertex 2 0 0.34
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex -3 -5 0.34
+      vertex 2 0 0.34
+      vertex -3 0 0.34
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -3 0 0
+      vertex 2 0 0
+      vertex 2 -5 0
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -3 0 0
+      vertex 2 -5 0
+      vertex -3 -5 0
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -3 -5 0
+      vertex -3 0 0
+      vertex -3 0 0.34
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -3 -5 0
+      vertex -3 0 0.34
+      vertex -3 -5 0.34
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 -5 0
+      vertex 2 -5 0.34
+      vertex 2 0 0.34
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 2 -5 0
+      vertex 2 0 0.34
+      vertex 2 0 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -3 -5 0
+      vertex -3 -5 0.34
+      vertex 2 -5 0.34
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -3 -5 0
+      vertex 2 -5 0.34
+      vertex 2 -5 0
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -3 0 0
+      vertex 2 0 0
+      vertex 2 0 0.34
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -3 0 0
+      vertex 2 0 0.34
+      vertex -3 0 0.34
+    endloop
+  endfacet
+endsolid
+```
+
+
+* *Fibonacci Steps:* layers that encode deterministic bases for regeneration.
+* *Pisano Twist (Δθ = 60°):* compact “helix” hinting at cycle length and residues.
+* *Spiral Ramp (1,1,2,3,5):* growth arc—each layer higher, showing aggregation in our compression pipeline.
+
+
 ### Tiny caption (optional)
 
 > *Pisano Twist (Δθ = 60°): a compact “helix” evoking the 60-step Pisano cycle. Use alongside the Fibonacci steps model to show layers (steps) + cycle (twist)—aka your evolving compression story.*
