@@ -11,7 +11,15 @@
             <div class="demo-header">
     <div>
         <h2>Live Load Balancer Visualizer</h2>
-        <p>Simulating 100 requests per second to two different server clusters.</p>
+        <p>
+            We compare two ways of spreading incoming requests across many servers:
+            <strong>Traditional Round‑Robin</strong> (take turns) vs <strong>PhiBalancer</strong> (uses math to avoid hidden patterns).
+            In plain terms: fewer traffic jams and smoother performance during rush hour.
+        </p>
+        <p style="font-size:0.95rem;color:#7f8c8d;">
+            Everyday impact: faster page loads, fewer "try again" errors during ticket drops or sales, and more stable video/live streams.
+            In tech terms: less contention and better cache locality via quasi‑uniform hashing.
+        </p>
     </div>
     <nav>
         <a href="/">Home</a>
@@ -26,6 +34,9 @@
 
             <h3>Project Resonance (PhiBalancer)</h3>
             <div class="balancer-grid" id="resonance-grid"></div>
+            <p style="margin-top:1rem;font-size:0.95rem;color:#7f8c8d;">
+                Verify it yourself: watch how the green cluster lights up more evenly over time than the traditional one—this means more consistent latency.
+            </p>
         </div>
     </div>
 

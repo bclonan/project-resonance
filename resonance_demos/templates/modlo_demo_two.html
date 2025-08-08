@@ -29,7 +29,11 @@
             <div class="demo-header">
                 <div>
                     <h2>VC Demo: Deterministic Sequence & Grid Generator</h2>
-                    <p>Showcasing how the **Modlo Sequence** can generate vast, complex, and reproducible data fields from a single seed.</p>
+                    <p>
+                        Plain English: a tiny number (the seed) recreates a huge, consistent world. Same seed = same grid.
+                        Why it matters: teams can sync complex states by sharing the seed only—no giant downloads.
+                        Uses include games, simulations, and testing.
+                    </p>
                 </div>
                 <a href="/" class="back-link">← Back to Demos</a>
             </div>
@@ -56,6 +60,15 @@
                 <button id="generateButton" class="button">Generate Grid</button>
             </div>
 
+            <div class="explanation-box" style="margin-top: 1rem;">
+                <h3>How to verify yourself</h3>
+                <p>
+                    Enter any number (e.g., your birthday) and press Generate. Copy the seed and send it to a friend.
+                    If they load this page and use the same seed, the highlighted points and IDs will match exactly.
+                    No large files shared—just the seed.
+                </p>
+            </div>
+
             <div class="explanation-box" style="margin-top: 2rem; border-left-color: #9b59b6;">
                 <h3>The Multi-Billion Dollar Applications</h3>
                 <p>Storing and synchronizing massive, complex datasets is a huge challenge. This demo showcases **procedural data generation**, a technique that revolutionizes how digital environments are built, tested, and synchronized.</p>
@@ -68,12 +81,41 @@
 
                 <div id="gaming" class="use-case-content active">
                     <p><strong>Use Case:</strong> Instead of storing a 100 GB game world, store a 1 KB seed. The **Modlo Sequence** acts as "digital DNA," growing a vast, explorable universe in real-time. This allows for exponentially larger worlds with a fraction of the storage and bandwidth costs, a critical technology for the future of immersive gaming.</p>
+                    <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:6px;">
+                        <strong>Try it yourself:</strong>
+                        <ul style="margin:0.5rem 0 0 1rem;">
+                            <li>Press Generate to build a world from the seed.</li>
+                            <li>Click "Export grid as JSON" to download the world layout (few KB) and share only the seed.</li>
+                            <li>Click "Compute fingerprint" to get a short code. Your friend should get the same code with the same seed.</li>
+                        </ul>
+                        <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+                            <button id="btnExportGrid" class="button">Export grid as JSON</button>
+                            <button id="btnFingerprint" class="button" style="background:#9b59b6;">Compute fingerprint</button>
+                            <span id="fingerprintOut" style="align-self:center;color:#7f8c8d;"></span>
+                        </div>
+                    </div>
                 </div>
                 <div id="hft" class="use-case-content">
                     <p><strong>Use Case:</strong> In High-Frequency Trading, algorithms must be rigorously backtested against realistic market data. The Modlo Sequence can generate **infinite streams of deterministic, yet complex, market data** from a simple seed. This allows firms to test trading strategies across millions of reproducible scenarios, ensuring robustness and finding edge cases that random data would miss.</p>
+                    <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:6px;">
+                        <strong>Try it yourself:</strong>
+                        <ul style="margin:0.5rem 0 0 1rem;">
+                            <li>Click "Generate deterministic price series (CSV)" to download a reproducible series from this seed.</li>
+                            <li>Share the seed and CSV with a teammate; they’ll regenerate the same series.</li>
+                        </ul>
+                        <button id="btnHFTCSV" class="button">Generate deterministic price series (CSV)</button>
+                    </div>
                 </div>
                 <div id="twins" class="use-case-content">
                     <p><strong>Use Case:</strong> A "Digital Twin" is a virtual model of a real-world object, like a factory floor or a jet engine. The Modlo Sequence can generate the initial state for thousands of simulated sensors and components. By sharing only the seed, multiple engineers can run the exact same complex simulation, ensuring that all tests are perfectly synchronized and reproducible.</p>
+                    <div class="try-box" style="margin-top:1rem;background:#f8f9fa;padding:1rem;border-radius:6px;">
+                        <strong>Try it yourself:</strong>
+                        <ul style="margin:0.5rem 0 0 1rem;">
+                            <li>Click "Generate 1000 sensor states (JSON)" to export a deterministic snapshot from this seed.</li>
+                            <li>Share the seed so others can reproduce the exact same twin state without large files.</li>
+                        </ul>
+                        <button id="btnTwinJSON" class="button">Generate 1000 sensor states (JSON)</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -93,6 +135,7 @@
 
         let scale = 1.0, panX = 0, panY = 0, isPanning = false, startPan = { x: 0, y: 0 };
 
+        let lastGrid = { points: [], grid_size: 50 };
         async function generateGrid() {
             const seed = seedInput.value || '0';
             const gridSize = 50;
@@ -103,6 +146,9 @@
 
             const response = await fetch(`/api/generate_grid?seed=${encodeURIComponent(seed)}&grid_size=${gridSize}`);
             const data = await response.json();
+
+            lastGrid.points = data.grid_points || [];
+            lastGrid.grid_size = data.grid_size || gridSize;
 
             data.grid_points.forEach(point => {
                 const pointEl = document.createElement('div');
@@ -155,8 +201,76 @@
             evt.currentTarget.className += " active";
         }
 
-        generateButton.addEventListener('click', generateGrid);
+    generateButton.addEventListener('click', generateGrid);
+    seedInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') generateGrid(); });
         generateGrid(); // Initial generation
+
+        // --- Verification helpers ---
+        function download(filename, text) {
+            const a = document.createElement('a');
+            a.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
+            a.setAttribute('download', filename);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function djb2(str) {
+            let h = 5381;
+            for (let i = 0; i < str.length; i++) h = ((h << 5) + h) + str.charCodeAt(i);
+            return (h >>> 0).toString(16);
+        }
+
+        document.getElementById('btnExportGrid').addEventListener('click', () => {
+            const seed = seedInput.value || '0';
+            const payload = { seed, grid_size: lastGrid.grid_size, points: lastGrid.points };
+            download(`grid_seed_${seed}.json`, JSON.stringify(payload));
+        });
+
+        document.getElementById('btnFingerprint').addEventListener('click', () => {
+            const seed = seedInput.value || '0';
+            const sorted = [...lastGrid.points].sort((a,b)=> a.y - b.y || a.x - b.x);
+            const s = JSON.stringify({ seed, sorted });
+            const fp = djb2(s);
+            document.getElementById('fingerprintOut').textContent = `Fingerprint: ${fp}`;
+        });
+
+        function makeLCG(seedNum) {
+            const m = 2147483647, a = 48271; let state = (seedNum % m + m) % m || 1;
+            return () => (state = (a * state) % m) / m;
+        }
+
+        document.getElementById('btnHFTCSV').addEventListener('click', () => {
+            const seed = seedInput.value || '0';
+            const base = Array.from(seed).reduce((acc,ch)=> acc + ch.charCodeAt(0), 0);
+            const rnd = makeLCG(base);
+            let price = 100.0;
+            const rows = [ 't,price,volume' ];
+            for (let i=0;i<300;i++) {
+                const drift = (rnd()-0.5)*0.2; // small random walk
+                price = Math.max(1, price * (1 + drift/100));
+                const vol = Math.round(10 + rnd()*90);
+                rows.push(`${i},${price.toFixed(4)},${vol}`);
+            }
+            const csv = rows.join('\n');
+            const a = document.createElement('a');
+            a.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+            a.setAttribute('download', `hft_series_seed_${seed}.csv`);
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        });
+
+        document.getElementById('btnTwinJSON').addEventListener('click', () => {
+            const seed = seedInput.value || '0';
+            const base = Array.from(seed).reduce((acc,ch)=> acc + ch.charCodeAt(0), 0);
+            const rnd = makeLCG(base + 1337);
+            const sensors = [];
+            for (let i=0;i<1000;i++) {
+                const val = (rnd()*100).toFixed(2);
+                const status = rnd() > 0.98 ? 'fault' : (rnd() > 0.9 ? 'warn' : 'ok');
+                sensors.push({ id: `S${i.toString().padStart(4,'0')}`, value: Number(val), status });
+            }
+            download(`digital_twin_seed_${seed}.json`, JSON.stringify({ seed, sensors }));
+        });
     </script>
 </body>
 </html>

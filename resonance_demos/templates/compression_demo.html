@@ -30,13 +30,18 @@
             <div class="demo-header">
                 <div>
                     <h2>Real-Time Compression Dashboard</h2>
-                    <p>This is a **live benchmark** using our compiled C++ library to demonstrate its real-world value.</p>
+                    <p>
+                        This is a live benchmark. Green is our compressor (PhiComp), red is raw data, yellow is gzip.
+                        Lower lines mean fewer bytes sent—faster uploads, quicker syncs, and smaller bills.
+                        In everyday terms: shorter wait times when sharing files or loading content.
+                    </p>
                 </div>
                 <a href="/" class="back-link">← Back to Demos</a>
             </div>
             
             <p style="text-align: center; font-size: 1.1rem; margin-bottom: 2rem;">
-                <strong>What to watch:</strong> The green line (<strong>`phicomp`</strong>) should consistently stay lower than the red line (<strong>Gzip</strong>), demonstrating its superior efficiency. The gap between them represents real, saved bandwidth.
+                <strong>What to watch:</strong> The green line (PhiComp) should stay below yellow (Gzip) and red (Raw). The gap between lines is
+                the real bandwidth you save—meaning faster streaming and uploads. Try your own file below to verify.
             </p>
             <canvas id="compressionChart"></canvas>
 
@@ -101,12 +106,43 @@
     </div>
 
     <script>
-        // --- REAL-TIME CHART LOGIC (UNCHANGED) ---
+        // --- REAL-TIME CHART LOGIC ---
         const ctx = document.getElementById('compressionChart').getContext('2d');
-        const compressionChart = new Chart(ctx, { /* ... full chart config as before ... */ });
+        const compressionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Raw (bytes)', data: [], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', tension: 0.2 },
+                    { label: 'Gzip (bytes)', data: [], borderColor: '#f1c40f', backgroundColor: 'rgba(241,196,15,0.1)', tension: 0.2 },
+                    { label: 'PhiComp (bytes)', data: [], borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.1)', tension: 0.2 }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'Time (s)' } },
+                    y: { title: { display: true, text: 'Cumulative bytes' }, beginAtZero: true }
+                },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
         const ws = new WebSocket(`ws://${window.location.host}/ws/compression_stream`);
-        let time = 0;
-        ws.onmessage = function(event) { /* ... full message handler as before ... */ };
+        let t = 0;
+        ws.onmessage = function(event) {
+            const msg = JSON.parse(event.data);
+            t += 0.2; // server sends ~every 200ms
+            compressionChart.data.labels.push(t.toFixed(1));
+            compressionChart.data.datasets[0].data.push(msg.raw);
+            compressionChart.data.datasets[1].data.push(msg.gzip);
+            compressionChart.data.datasets[2].data.push(msg.phicomp);
+            // keep last 120 points (~24s)
+            if (compressionChart.data.labels.length > 120) {
+                compressionChart.data.labels.shift();
+                compressionChart.data.datasets.forEach(ds => ds.data.shift());
+            }
+            compressionChart.update('none');
+        };
 
         // --- TAB SWITCHING LOGIC ---
         function openTab(evt, tabName) {

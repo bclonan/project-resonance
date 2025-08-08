@@ -297,6 +297,17 @@ def generate_grid(seed: int = 1337, grid_size: int = 50):
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# Specific demo routes that don't match the generic filename pattern
+@app.get("/demo/modlo_grid_two", response_class=HTMLResponse)
+async def show_modlo_grid_two(request: Request):
+    # File is named modlo_demo_two.html in templates
+    return templates.TemplateResponse("modlo_demo_two.html", {"request": request})
+
+@app.get("/demo/modlo_grid", response_class=HTMLResponse)
+async def show_modlo_grid(request: Request):
+    # File is named modlo_demo.html in templates
+    return templates.TemplateResponse("modlo_demo.html", {"request": request})
+
 @app.get("/demo/{demo_name}", response_class=HTMLResponse)
 async def show_demo(request: Request, demo_name: str):
     return templates.TemplateResponse(f"{demo_name}_demo.html", {"request": request})
