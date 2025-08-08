@@ -12,7 +12,12 @@ def modlo_sequence(n_terms: int) -> list[int]:
     This unique structure—an organic head followed by a periodic tail—makes it
     a versatile tool for a new class of deterministic applications.
     """
-    if n_terms <= 0:
+    if not isinstance(n_terms, int):
+        raise TypeError("n_terms must be an integer.")
+    if n_terms < 0:
+        raise ValueError("n_terms must be non-negative.")
+        
+    if n_terms == 0:
         return []
         
     # 1. Seed the first seven Fibonacci terms.
