@@ -414,6 +414,132 @@ def download_market_snapshot(duration_s: int = 10):
     return Response(content=bio.read(), media_type='application/zip', headers=headers)
 
 # =================================================================================
+# REFLECTION COMPRESSION DEMO (GitHub + local /data folder)
+# =================================================================================
+import base64
+from pathlib import Path
+DATA_DIR = Path(os.path.abspath(os.path.join(APP_ROOT, '..', 'data')))
+
+def _collect_local_reflection_files():
+    files = []
+    if DATA_DIR.exists():
+        for p in DATA_DIR.iterdir():
+            if p.is_file():
+                try:
+                    raw = p.read_bytes()
+                    files.append({
+                        "name": p.name,
+                        "size": len(raw),
+                        "sha256": hashlib.sha256(raw).hexdigest(),
+                        "preview": raw[:160].decode('utf-8', errors='ignore')
+                    })
+                except Exception:
+                    pass
+    return files
+
+@app.get("/api/reflection/list")
+def list_reflections():
+    return {"files": _collect_local_reflection_files()}
+
+@app.get("/api/reflection/get")
+def get_reflection(name: str):
+    target = DATA_DIR / name
+    if not target.exists() or not target.is_file():
+        return {"error": "Not found"}
+    raw = target.read_bytes()
+    comp = phicomp.compress(raw)
+    import zlib as _z
+    gz = _z.compress(raw, level=6)
+    return {
+        "name": name,
+        "original_size": len(raw),
+        "compressed_size": len(comp),
+        "gzip_size": len(gz),
+        "savings_vs_raw_phicomp_pct": (1 - len(comp)/max(1,len(raw))) * 100.0,
+        "savings_vs_raw_gzip_pct": (1 - len(gz)/max(1,len(raw))) * 100.0,
+        "savings_vs_gzip_phicomp_pct": (1 - len(comp)/max(1,len(gz))) * 100.0 if len(gz)>0 else None,
+        "sha256_raw": hashlib.sha256(raw).hexdigest(),
+        "b64_phicomp": base64.b64encode(comp).decode('ascii')
+    }
+
+def _guess_mime(filename: str):
+    lower = filename.lower()
+    if lower.endswith('.txt') or lower.endswith('.md'): return 'text/plain; charset=utf-8'
+    if lower.endswith('.json'): return 'application/json'
+    if lower.endswith('.csv'): return 'text/csv; charset=utf-8'
+    return 'application/octet-stream'
+
+def _guess_file_type(filename: str):
+    lower = filename.lower()
+    if lower.endswith('.json'): return 'json'
+    if lower.endswith('.md') or lower.endswith('.markdown'): return 'markdown'
+    if lower.endswith('.txt') or lower.endswith('.log'): return 'text'
+    if lower.endswith('.csv'): return 'csv'
+    return 'binary'
+
+@app.post("/api/reflection/decode")
+async def decode_reflection(request: Request):
+    body = await request.json()
+    b64_payload = body.get("b64_phicomp")
+    name = body.get("name", "restored.bin")
+    try:
+        comp = base64.b64decode(b64_payload)
+        raw = phicomp.decompress(comp)
+        return {
+            "name": name,
+            "raw_size": len(raw),
+            "sha256_raw": hashlib.sha256(raw).hexdigest(),
+            "preview": raw[:200].decode('utf-8', errors='ignore'),
+            "file_type": _guess_file_type(name)
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/reflection/decode_file")
+async def decode_reflection_file(request: Request):
+    """Decode a base64 phicomp payload and return the original bytes as a downloadable file."""
+    body = await request.json()
+    b64_payload = body.get("b64_phicomp")
+    name = body.get("name", "restored.bin")
+    try:
+        comp = base64.b64decode(b64_payload)
+        raw = phicomp.decompress(comp)
+        headers = {"Content-Disposition": f"attachment; filename={name}"}
+        return Response(content=raw, media_type=_guess_mime(name), headers=headers)
+    except Exception as e:
+        return {"error": str(e)}
+
+import http.client
+@app.get("/api/reflection/fetch_github")
+def fetch_github_file(raw_url: str):
+    """Fetch a raw file from a public GitHub raw URL (https://raw.githubusercontent.com/...)."""
+    try:
+        if not raw_url.startswith("https://raw.githubusercontent.com/"):
+            return {"error": "Only raw.githubusercontent.com URLs allowed"}
+        # naive fetch avoiding extra deps
+        from urllib.request import urlopen
+        with urlopen(raw_url) as resp:
+            data = resp.read()
+        comp = phicomp.compress(data)
+        import zlib as _z
+        gz = _z.compress(data, level=6)
+        return {
+            "source_url": raw_url,
+            "original_size": len(data),
+            "compressed_size": len(comp),
+            "gzip_size": len(gz),
+            "savings_vs_raw_phicomp_pct": (1 - len(comp)/max(1,len(data))) * 100.0,
+            "savings_vs_raw_gzip_pct": (1 - len(gz)/max(1,len(data))) * 100.0,
+            "savings_vs_gzip_phicomp_pct": (1 - len(comp)/max(1,len(gz))) * 100.0 if len(gz)>0 else None,
+            "sha256_raw": hashlib.sha256(data).hexdigest(),
+                "b64_phicomp": base64.b64encode(comp).decode('ascii'),
+                # attempt to infer file type from URL path
+                "file_type": _guess_file_type(raw_url.split('/')[-1])
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# =================================================================================
 # VC DEMO 2: PROCEDURAL GRID GENERATOR (MODLO SEQUENCE)
 # =================================================================================
 @app.get("/api/generate_grid")
@@ -453,6 +579,31 @@ async def show_modlo_grid(request: Request):
     # File is named modlo_demo.html in templates
     return templates.TemplateResponse("modlo_demo.html", {"request": request})
 
+# Explicit routes for common demos to avoid relying solely on the generic pattern
+@app.get("/demo/market", response_class=HTMLResponse)
+async def show_market(request: Request):
+    return templates.TemplateResponse("market_demo.html", {"request": request})
+
+@app.get("/demo/compression", response_class=HTMLResponse)
+async def show_compression(request: Request):
+    return templates.TemplateResponse("compression_demo.html", {"request": request})
+
+@app.get("/demo/cloud", response_class=HTMLResponse)
+async def show_cloud(request: Request):
+    return templates.TemplateResponse("cloud_demo.html", {"request": request})
+
+@app.get("/demo/model", response_class=HTMLResponse)
+async def show_model(request: Request):
+    return templates.TemplateResponse("model_demo.html", {"request": request})
+
+@app.get("/demo/balancer", response_class=HTMLResponse)
+async def show_balancer(request: Request):
+    return templates.TemplateResponse("balancer_demo.html", {"request": request})
+
+@app.get("/demo/modlo", response_class=HTMLResponse)
+async def show_modlo(request: Request):
+    return templates.TemplateResponse("modlo_demo.html", {"request": request})
+
 @app.get("/demo/{demo_name}", response_class=HTMLResponse)
 async def show_demo(request: Request, demo_name: str):
     return templates.TemplateResponse(f"{demo_name}_demo.html", {"request": request})
@@ -469,6 +620,10 @@ async def show_research(request: Request):
 async def show_architecture(request: Request):
     return templates.TemplateResponse("architecture.html", {"request": request})
 
+@app.get("/paper", response_class=HTMLResponse)
+async def show_paper(request: Request):
+    return templates.TemplateResponse("paper.html", {"request": request})
+
 @app.get("/demo/snapshot", response_class=HTMLResponse)
 async def show_snapshot(request: Request):
     return templates.TemplateResponse("snapshot_demo.html", {"request": request})
@@ -477,6 +632,10 @@ async def show_snapshot(request: Request):
 async def show_rgbd(request: Request):
     return templates.TemplateResponse("rgbd_demo.html", {"request": request})
 
+@app.get("/demo/reflection", response_class=HTMLResponse)
+async def show_reflection(request: Request):
+    return templates.TemplateResponse("reflection_demo.html", {"request": request})
+
 # =================================================================================
 # Local Development Runner
 # =================================================================================
@@ -484,6 +643,6 @@ if __name__ == "__main__":
     import uvicorn
     print("="*50)
     print(">> Running demo server in local development mode.")
-    print(">> Access at http://12.0.0.1:8000")
+    print(">> Access at http://127.0.0.1:8000")
     print("="*50)
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)

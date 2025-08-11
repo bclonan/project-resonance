@@ -1,0 +1,2 @@
+This is a sample reflection note about architectural coherence and compression efficiency.
+It will be used to demonstrate compress/decompress flows.

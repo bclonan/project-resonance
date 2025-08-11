@@ -1114,6 +1114,27 @@ python benchmarks/run_compression_benchmark.py
 python system/run_system_benchmark.py
 ```
 
+1. **Reflection Compression Demo (phicomp vs gzip baseline)**
+
+Run the FastAPI demo server and open the Reflection UI:
+
+```bash
+uvicorn resonance_demos.app:app --reload
+```
+
+Visit `http://127.0.0.1:8000/demo/reflection` to:
+
+- List local `/data` files
+- Compress (phicomp) and view gzip baseline metrics
+- Fetch & compress a public GitHub raw file
+- Decode or download reconstructed originals (hash-verified)
+
+Automated test coverage for the reflection endpoints:
+
+```bash
+pytest -q tests/test_reflection_demo.py
+```
+
 ## Author & Contact Information
 
 This project was created and is led by **Bradley Clonan**.

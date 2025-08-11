@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Reflection Compression Demo</title>
+<style>
+ body { font-family: Arial, sans-serif; margin: 2rem; }
+ h1 { margin-bottom: 0.5rem; }
+ section { margin-bottom: 2rem; }
+ pre { background:#f5f5f5; padding:1rem; max-height:220px; overflow:auto; }
+ table { border-collapse: collapse; width:100%; }
+ th, td { border:1px solid #ccc; padding:4px 8px; font-size: 0.9rem; }
+ .pill { background:#eef; padding:2px 6px; border-radius:4px; font-family:monospace; }
+ .row-actions button { margin-right:4px; }
+ .flex { display:flex; gap:1rem; }
+ textarea { width:100%; height:140px; }
+ .small { font-size:0.8rem; color:#555; }
+ .mono { font-family:monospace; }
+</style>
+</head>
+<body>
+<h1>Reflection Compression & Regeneration Demo</h1>
+<p>This demo shows how to:
+<ol>
+  <li>List local reflection/metadata files in <code>/data</code>.</li>
+  <li>Compress any file with <code>phicomp</code> and export a base64 payload.</li>
+  <li>Fetch an arbitrary public GitHub raw file, compress it, and stage it.</li>
+  <li>Decode any base64 <code>phicomp</code> blob back into its original bytes and preview.</li>
+</ol>
+All operations are verifiable using SHA-256 hashes. You can store <strong>only</strong> the compressed base64 plus hash in a metadata store and later reconstruct the original payload bit-for-bit.</p>
+
+<section>
+  <h2>1. Local /data Files</h2>
+  <button onclick="loadLocal()">Refresh List</button>
+  <table id="localTbl"><thead><tr><th>Name</th><th>Size</th><th>SHA-256</th><th>Preview</th><th>Actions</th></tr></thead><tbody></tbody></table>
+</section>
+
+<section>
+  <h2>2. Selected File Compression Result</h2>
+  <div id="selectedMeta" class="small"></div>
+  <textarea id="b64Area" placeholder="Base64 phicomp payload will appear here..."></textarea>
+  <button onclick="decodeCurrent()">Decode This Payload</button>
+  <button onclick="downloadCurrent()">Download Restored File</button>
+  <div id="decodeResult"></div>
+</section>
+
+<section>
+  <h2>3. Fetch & Compress from GitHub Raw URL</h2>
+  <input id="ghUrl" style="width:60%" placeholder="https://raw.githubusercontent.com/user/repo/branch/path/to/file" />
+  <button onclick="fetchGithub()">Fetch & Compress</button>
+  <div id="ghStatus" class="small"></div>
+  <h3>Preset Examples</h3>
+  <ul id="presetList" class="small"></ul>
+</section>
+
+<section>
+  <h2>4. Session Artifacts</h2>
+  <p class="small">Each compressed item (local or GitHub) you produce in this session is tracked here so you can quickly re-decode or download it. Data is in-memory only (clears on refresh).</p>
+  <table id="artifactTbl"><thead><tr><th>Name/Source</th><th>Orig</th><th>phicomp</th><th>gzip</th><th>Savings%</th><th>Actions</th></tr></thead><tbody></tbody></table>
+</section>
+
+<script>
+async function loadLocal(){
+  const r = await fetch('/api/reflection/list');
+  const j = await r.json();
+  const tbody = document.querySelector('#localTbl tbody');
+  tbody.innerHTML='';
+  (j.files||[]).forEach(f=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${f.name}</td><td>${f.size}</td><td class='mono'>${f.sha256}</td><td><pre>${escapeHtml(f.preview||'')}</pre></td><td class='row-actions'><button onclick=compressFile('${f.name}')>Compress</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+async function compressFile(name){
+  const r= await fetch('/api/reflection/get?name='+encodeURIComponent(name));
+  const j= await r.json();
+  if(j.error){alert(j.error);return;}
+  document.getElementById('selectedMeta').innerText=`${j.name} | orig=${j.original_size} bytes | comp=${j.compressed_size} bytes | sha256=${j.sha256_raw}`;
+  document.getElementById('b64Area').value=j.b64_phicomp;
+  document.getElementById('decodeResult').innerHTML='';
+}
+async function decodeCurrent(){
+  const b64=document.getElementById('b64Area').value.trim();
+  if(!b64){alert('No payload');return;}
+  const r= await fetch('/api/reflection/decode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({b64_phicomp:b64})});
+  const j= await r.json();
+  if(j.error){document.getElementById('decodeResult').innerHTML='<span style=color:red>'+j.error+'</span>';return;}
+    renderDecoded(j);
+}
+async function downloadCurrent(){
+  const b64=document.getElementById('b64Area').value.trim();
+  if(!b64){alert('No payload');return;}
+  const namePrompt = prompt('Filename to save (optional):','restored.txt') || 'restored.txt';
+  const r= await fetch('/api/reflection/decode_file',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({b64_phicomp:b64,name:namePrompt})});
+  if(!r.ok){alert('Download failed');return;}
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=namePrompt; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+async function fetchGithub(){
+  const url=document.getElementById('ghUrl').value.trim();
+  if(!url) return;
+  document.getElementById('ghStatus').innerText='Fetching...';
+  const r= await fetch('/api/reflection/fetch_github?raw_url='+encodeURIComponent(url));
+  const j= await r.json();
+  if(j.error){document.getElementById('ghStatus').innerHTML='<span style=color:red>'+j.error+'</span>';return;}
+  document.getElementById('ghStatus').innerHTML=`Fetched ${j.original_size}B, compressed ${j.compressed_size}B, sha256=${j.sha256_raw}`;
+  document.getElementById('b64Area').value=j.b64_phicomp;
+  document.getElementById('selectedMeta').innerText='(GitHub source) '+url;
+  document.getElementById('decodeResult').innerHTML='';
+  trackArtifact({
+    name: url.split('/').slice(-1)[0] || 'remote',
+    source: url,
+    original_size: j.original_size,
+    compressed_size: j.compressed_size,
+    gzip_size: j.gzip_size,
+    savings_vs_raw_phicomp_pct: j.savings_vs_raw_phicomp_pct,
+    b64: j.b64_phicomp
+  });
+}
+// --- Type-aware preview rendering ---
+function renderDecoded(meta){
+  let body = '';
+  if(meta.file_type==='json'){
+    try{ const parsed = JSON.parse(meta.preview + ''); body = '<pre>'+escapeHtml(JSON.stringify(parsed,null,2))+'</pre>'; }
+    catch{ body = '<pre>'+escapeHtml(meta.preview||'')+'</pre>'; }
+  } else if(meta.file_type==='markdown') {
+    body = '<pre>'+escapeHtml(meta.preview||'')+'</pre>';
+  } else if(meta.file_type==='text' || meta.file_type==='csv') {
+    body = '<pre>'+escapeHtml(meta.preview||'')+'</pre>';
+  } else {
+    body = '<em>Binary preview (first 200 bytes shown as text escape)</em><pre>'+escapeHtml(meta.preview||'')+'</pre>';
+  }
+  document.getElementById('decodeResult').innerHTML = `<strong>Decoded</strong>: ${meta.raw_size} bytes | sha256=${meta.sha256_raw} | type=${meta.file_type}<br>${body}`;
+}
+
+// --- Session artifact tracking ---
+const artifacts=[];
+function trackArtifact(a){
+  artifacts.push(a); renderArtifacts();
+}
+function renderArtifacts(){
+  const tb=document.querySelector('#artifactTbl tbody');
+  tb.innerHTML='';
+  artifacts.forEach((a,i)=>{
+    const tr=document.createElement('tr');
+    const savePct = a.savings_vs_raw_phicomp_pct?.toFixed(2) || '';
+    tr.innerHTML=`<td title="${escapeHtml(a.source||a.name)}">${escapeHtml(a.name)}</td><td>${a.original_size}</td><td>${a.compressed_size}</td><td>${a.gzip_size||''}</td><td>${savePct}</td><td><button onclick="loadArtifact(${i})">Load</button> <button onclick="decodeArtifact(${i})">Preview</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function loadArtifact(i){
+  const a=artifacts[i];
+  document.getElementById('b64Area').value=a.b64;
+  document.getElementById('selectedMeta').innerText=`${a.name} | orig=${a.original_size} bytes | comp=${a.compressed_size} bytes`;
+  document.getElementById('decodeResult').innerHTML='';
+}
+async function decodeArtifact(i){
+  loadArtifact(i);
+  await decodeCurrent();
+}
+
+// --- Preset GitHub raw links (can extend) ---
+const presets = [
+  'https://raw.githubusercontent.com/bclonan/project-resonance/main/README.md',
+  'https://raw.githubusercontent.com/bclonan/project-resonance/main/LICENSE',
+  'https://raw.githubusercontent.com/bclonan/project-resonance/main/pyproject.toml'
+];
+function renderPresets(){
+  const ul=document.getElementById('presetList');
+  ul.innerHTML='';
+  presets.forEach(u=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<a href="#" onclick="document.getElementById('ghUrl').value='${u}'; fetchGithub(); return false;">${u.split('/').slice(-1)[0]}</a>`;
+    ul.appendChild(li);
+  });
+}
+
+// Hook artifact tracking into local compression
+async function compressFile(name){
+  const r= await fetch('/api/reflection/get?name='+encodeURIComponent(name));
+  const j= await r.json();
+  if(j.error){alert(j.error);return;}
+  document.getElementById('selectedMeta').innerText=`${j.name} | orig=${j.original_size} bytes | comp=${j.compressed_size} bytes | sha256=${j.sha256_raw}`;
+  document.getElementById('b64Area').value=j.b64_phicomp;
+  document.getElementById('decodeResult').innerHTML='';
+  trackArtifact({
+    name: j.name,
+    source: j.name,
+    original_size: j.original_size,
+    compressed_size: j.compressed_size,
+    gzip_size: j.gzip_size,
+    savings_vs_raw_phicomp_pct: j.savings_vs_raw_phicomp_pct,
+    b64: j.b64_phicomp
+  });
+}
+
+renderPresets();
+loadLocal();
+</script>
+</body>
+</html>
