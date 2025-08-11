@@ -466,6 +466,10 @@ def _guess_mime(filename: str):
     lower = filename.lower()
     if lower.endswith('.txt') or lower.endswith('.md'): return 'text/plain; charset=utf-8'
     if lower.endswith('.json'): return 'application/json'
+    if lower.endswith('.xml'): return 'application/xml; charset=utf-8'
+    if lower.endswith('.html') or lower.endswith('.htm'): return 'text/html; charset=utf-8'
+    if lower.endswith('.css'): return 'text/css; charset=utf-8'
+    if lower.endswith('.yaml') or lower.endswith('.yml'): return 'application/x-yaml; charset=utf-8'
     if lower.endswith('.csv'): return 'text/csv; charset=utf-8'
     return 'application/octet-stream'
 
@@ -473,6 +477,10 @@ def _guess_file_type(filename: str):
     lower = filename.lower()
     if lower.endswith('.json'): return 'json'
     if lower.endswith('.md') or lower.endswith('.markdown'): return 'markdown'
+    if lower.endswith('.html') or lower.endswith('.htm'): return 'html'
+    if lower.endswith('.css'): return 'css'
+    if lower.endswith('.yaml') or lower.endswith('.yml'): return 'yaml'
+    if lower.endswith('.xml'): return 'xml'
     if lower.endswith('.txt') or lower.endswith('.log'): return 'text'
     if lower.endswith('.csv'): return 'csv'
     return 'binary'
